@@ -1,0 +1,463 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+import RollText from './RollText.astro';
+import SpecaMark from './SpecaMark.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).how;
+const c = t.cards;
+const stepIcons: IconName[] = ['search', 'compare', 'check', 'cursor', 'bag'];
+const shops = ['MX', 'MT', 'RP', 'KV', 'AS', '+4'];
+const shopColors = niches.slice(0, 6).map((n) => [n.c1, n.c2]);
+const stack = [niches[5], niches[3], niches[1], niches[0]]; // tools, run, ski, bike
+
+// График переходов: плавная кривая через точки (кубические Безье)
+const W = 320, H = 140;
+const pts: [number, number][] = [[0, 112], [53, 98], [107, 104], [160, 76], [213, 82], [267, 46], [320, 22]];
+const curve = pts.reduce((d, [x, y], i) => {
+  if (i === 0) return `M${x} ${y}`;
+  const [px, py] = pts[i - 1];
+  const mx = (px + x) / 2;
+  return `${d} C${mx} ${py} ${mx} ${y} ${x} ${y}`;
+}, '');
+const area = `${curve} L${W} ${H} L0 ${H} Z`;
+---
+<section class="section how" id="how">
+  <div class="container">
+    <header class="section-head">
+      <h2 class="h2" data-inview>{t.title}</h2>
+      <p class="lead" data-inview style="--d:1">{t.lead}</p>
+    </header>
+
+    <div class="bento">
+      <!-- 01 — подключение ассортимента (широкая) -->
+      <article class="bcard bcard--feed roll-host" data-inview style="--d:1">
+        <div class="iso" aria-hidden="true">
+          {c.feed.layers.map((label, k) => (
+            <div class={`iso__layer iso__layer--${k}`} style={`--k:${k}`}>
+              {k === 2 && <SpecaMark class="iso__mark" />}
+              {k === 1 && <span class="iso__rows"><i></i><i></i><i></i></span>}
+              <span class="iso__label">{label}</span>
+            </div>
+          ))}
+        </div>
+        <div class="bcard__body bcard__body--narrow">
+          <h3 class="bcard__title"><RollText text={c.feed.title} /></h3>
+          <p class="bcard__text">{c.feed.text}</p>
+        </div>
+      </article>
+
+      <!-- 02 — одна платформа (высокая, тёмная) -->
+      <article class="bcard bcard--network roll-host" data-inview style="--d:2">
+        <div class="deck" aria-hidden="true">
+          {stack.map((n, k) => (
+            <span class="deck__card" style={`--k:${4 - k};--c:${n.c1}`}></span>
+          ))}
+          <div class="deck__front">
+            <SpecaMark class="deck__mark" />
+            <p class="deck__lines">{c.network.card.map((l) => <span>{l}</span>)}</p>
+            <p class="deck__prompt">{c.network.prompt}<span class="deck__caret">_</span></p>
+          </div>
+        </div>
+        <div class="bcard__body">
+          <h3 class="bcard__title"><RollText text={c.network.title} /></h3>
+          <p class="bcard__text">{c.network.text}</p>
+        </div>
+      </article>
+
+      <!-- 03 — сравнение магазинов -->
+      <article class="bcard bcard--compare roll-host" data-inview style="--d:3">
+        <div class="avatars" aria-hidden="true">
+          {shops.map((s, i) => (
+            <span class="avatars__item" style={`--i:${i};--dir:${i % 2 === 0 ? -1 : 1};--a1:${shopColors[i][0]};--a2:${shopColors[i][1]};z-index:${shops.length - i}`}>{s}</span>
+          ))}
+        </div>
+        <div class="bcard__body">
+          <h3 class="bcard__title"><RollText text={c.compare.title} /></h3>
+          <p class="bcard__text">{c.compare.text}</p>
+        </div>
+      </article>
+
+      <!-- 04 — путь покупателя -->
+      <article class="bcard bcard--path roll-host" data-inview style="--d:4">
+        <ol class="steps" aria-label={c.path.title}>
+          {c.path.steps.map((step, i) => (
+            <>
+              <li class="steps__item">
+                <span class:list={['steps__icon', { 'is-last': i === c.path.steps.length - 1 }]}>
+                  <Icon name={stepIcons[i]} size={18} />
+                </span>
+                <span class="steps__label">{step}</span>
+              </li>
+              {i < c.path.steps.length - 1 && <li class="steps__caret" aria-hidden="true"><Icon name="caret" size={12} stroke={2} /></li>}
+            </>
+          ))}
+        </ol>
+        <div class="bcard__body">
+          <h3 class="bcard__title"><RollText text={c.path.title} /></h3>
+          <p class="bcard__text">{c.path.text}</p>
+        </div>
+      </article>
+
+      <!-- 05 — обновление цен (широкая снизу) -->
+      <article class="bcard bcard--update roll-host" data-inview style="--d:5">
+        <div class="chart" aria-hidden="true">
+          <div class="chart__head">
+            <span class="chart__label">{c.update.price}</span>
+            <span class="chart__delta">{c.update.drop}</span>
+          </div>
+          <svg class="chart__svg" viewBox={`0 0 ${W} ${H}`}>
+            <defs>
+              <linearGradient id="chart-area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style="stop-color: var(--ink); stop-opacity: 0.3" />
+                <stop offset="1" style="stop-color: var(--ink); stop-opacity: 0" />
+              </linearGradient>
+            </defs>
+            {[0, 1, 2, 3].map((k) => <line class="chart__grid" x1="0" x2={W} y1={10 + k * 40} y2={10 + k * 40} />)}
+            <path class="chart__area" d={area} />
+            <path class="chart__curve" d={curve} pathLength="1" />
+            {pts.slice(0, -1).map(([x, y], i) => <circle class="chart__pt" cx={x} cy={y} r="3" style={`--i:${i}`} />)}
+            <circle class="chart__ping" cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="5" />
+            <circle class="chart__end" cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="5" />
+          </svg>
+          <div class="chart__axis">{c.update.days.map((d) => <span>{d}</span>)}</div>
+        </div>
+        <div class="bcard__body bcard__body--narrow">
+          <h3 class="bcard__title"><RollText text={c.update.title} /></h3>
+          <p class="bcard__text">{c.update.text}</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      'feed feed net'
+      'cmp  path net'
+      'upd  upd  upd';
+    gap: 14px;
+  }
+  .bcard--feed { grid-area: feed; }
+  .bcard--network { grid-area: net; }
+  .bcard--compare { grid-area: cmp; }
+  .bcard--path { grid-area: path; }
+  .bcard--update { grid-area: upd; }
+
+  .bcard {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 24px;
+    min-height: 260px;
+    padding: clamp(22px, 2.4vw, 32px);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elev);
+    transition: border-color 0.5s;
+  }
+  .bcard:hover { border-color: var(--line-strong); }
+  /* Широкие карточки: текст строго по центру по высоте */
+  .bcard.bcard--feed { justify-content: center; }
+  /* Две малые карточки: визуал и текст выровнены по верху */
+  .bcard.bcard--compare,
+  .bcard.bcard--path { justify-content: flex-start; }
+  .avatars, .steps { min-height: 68px; }
+  .bcard__body { position: relative; z-index: 3; }
+  .bcard__body--narrow { max-width: 58%; }
+  .bcard__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(20px, 1.9vw, 26px);
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .bcard__text { margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--text-2); max-width: 34em; }
+
+  /* ---------- 01: изометрические слои ---------- */
+  .iso {
+    position: absolute;
+    right: 8%;
+    top: 50%;
+    width: 170px;
+    height: 170px;
+    translate: 0 -50%;
+    transform-style: preserve-3d;
+    perspective: 900px;
+    z-index: 2;
+  }
+  .iso__layer {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    transform: rotateX(58deg) rotateZ(-45deg) translateZ(calc(var(--k) * 30px));
+    transition: transform 0.7s var(--ease-out);
+    transition-delay: calc(var(--k) * 40ms);
+  }
+  .bcard--feed:hover .iso__layer { transform: rotateX(58deg) rotateZ(-45deg) translateZ(calc(var(--k) * 54px)); }
+  .iso__layer--0 {
+    border: 1px dashed var(--line-strong);
+    background: var(--tint);
+  }
+  .iso__layer--1 {
+    border: 1px solid var(--line-strong);
+    background: var(--bg-elev-2);
+    box-shadow: 0 20px 40px var(--shadow);
+  }
+  .iso__layer--2 {
+    background: linear-gradient(135deg, color-mix(in oklab, var(--c1) 85%, #fff), var(--c2));
+    box-shadow: 0 30px 60px color-mix(in oklab, var(--c1) 30%, transparent);
+  }
+  .iso__label {
+    position: absolute;
+    left: 14px;
+    bottom: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .iso__layer--2 .iso__label { color: rgb(0 0 0 / 0.7); }
+  .iso :global(.iso__mark) { width: 46px; height: 46px; --c1: #0b0b0d; --c2: #0b0b0d; }
+  .iso :global(.iso__mark path:not(:first-of-type)) { fill: #f4f4f6; }
+  .iso__rows { display: grid; gap: 8px; width: 60%; }
+  .iso__rows i { height: 8px; border-radius: 4px; background: var(--line-strong); }
+  .iso__rows i:nth-child(2) { width: 70%; }
+
+  /* ---------- 02: колода карточек ---------- */
+  .bcard--network {
+    --text: #f3f3f5;
+    --text-2: #a4a4ae;
+    --line: rgb(255 255 255 / 0.08);
+    --line-strong: rgb(255 255 255 / 0.14);
+    --c1-l: var(--c1);
+    background: #000;
+    color: var(--text);
+    justify-content: space-between;
+    min-height: 540px;
+  }
+  .deck {
+    position: relative;
+    width: min(72%, 240px);
+    aspect-ratio: 4 / 3.4;
+    margin: 28px auto 0;
+    translate: 8px 0;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .bcard--network:hover .deck { transform: translateY(-8px) scale(1.04); }
+  .deck__card {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background: color-mix(in oklab, var(--c) 70%, #111);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    box-shadow: 0 20px 40px rgb(0 0 0 / 0.5);
+    transform: rotate(calc(var(--k) * -3deg)) translate(calc(var(--k) * -4px), calc(var(--k) * 4px));
+    transition: transform 0.4s var(--ease-out);
+  }
+  .bcard--network:hover .deck__card {
+    transform: rotate(calc(var(--k) * -5deg)) translate(calc(var(--k) * -9px), calc(var(--k) * 9px));
+  }
+  .deck__front {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    border-radius: 14px;
+    background: #f4f4f6;
+    color: #0b0b0d;
+    background-image:
+      linear-gradient(to right, rgb(0 0 0 / 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.03) 1px, transparent 1px);
+    background-size: 10px 10px;
+    box-shadow: 0 30px 60px rgb(0 0 0 / 0.6);
+  }
+  .deck :global(.deck__mark) { width: 26px; height: 26px; }
+  .deck__lines {
+    display: grid;
+    margin-top: auto;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(15px, 1.4vw, 19px);
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .deck__prompt { margin-top: 10px; font-size: 11px; font-weight: 600; color: #55555e; }
+  .deck__caret { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- 03: аватары магазинов ---------- */
+  .avatars { display: flex; align-items: flex-start; }
+  .avatars__item {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-left: -12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--a1), var(--a2));
+    box-shadow: 0 0 0 3px var(--bg-elev);
+    color: #000;
+    font-size: 14px;
+    font-weight: 700;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .avatars__item:first-child { margin-left: 0; }
+  .avatars__item:last-child { background: var(--bg-elev-2); color: var(--text); box-shadow: 0 0 0 3px var(--bg-elev), inset 0 0 0 1px var(--line-strong); }
+  .bcard--compare:hover .avatars__item {
+    transform:
+      translate(calc(var(--i) * 12px), calc(var(--dir) * 4px))
+      rotate(calc((var(--i) - 2) * 5deg))
+      scale(1.1);
+  }
+
+  /* ---------- 04: шаги ---------- */
+  .steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .steps__item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .steps__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+  }
+  .steps__icon.is-last { background: var(--c1); border-color: var(--c1); color: #000; }
+  .steps__icon.is-last::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--radius);
+    border: 1px solid var(--c1);
+    animation: stepPing 1.8s var(--ease-out) infinite;
+  }
+  @keyframes stepPing { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.5); } }
+  .steps__label { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-2); }
+  .steps__caret { margin-top: 14px; color: var(--text-3); transition: color 0.3s, transform 0.3s; }
+  .bcard--path:hover .steps__caret { color: var(--text); transform: translateX(2px); }
+
+  /* ---------- 05: график переходов ---------- */
+  .bcard.bcard--update { min-height: 300px; justify-content: center; }
+  .chart {
+    position: absolute;
+    right: clamp(24px, 4vw, 56px);
+    top: 50%;
+    z-index: 2;
+    width: min(36%, 380px);
+    translate: 0 -50%;
+  }
+  .chart__head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .chart__label { font-size: 14px; font-weight: 500; color: var(--text-2); }
+  .chart__delta {
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--ink) 14%, transparent);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart__grid { stroke: var(--line); stroke-dasharray: 3 5; }
+  .chart__area { fill: url(#chart-area); transition: opacity 0.6s; }
+  .chart__curve {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 4px 12px color-mix(in oklab, var(--ink) 40%, transparent));
+  }
+  .chart__pt {
+    fill: var(--bg-elev);
+    stroke: var(--ink);
+    stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.4s var(--ease-out);
+    transition-delay: calc(var(--i) * 60ms);
+  }
+  .chart__end { fill: var(--ink); }
+  .chart__ping {
+    fill: none;
+    stroke: var(--ink);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: chartPing 2s var(--ease-out) infinite;
+  }
+  @keyframes chartPing { from { opacity: 0.8; transform: scale(1); } to { opacity: 0; transform: scale(3); } }
+  .chart__axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .bcard--update:hover .chart__curve { animation: draw 1.4s var(--ease-out); }
+  .bcard--update:hover .chart__area { animation: areaIn 1.4s var(--ease-out); }
+  .bcard--update:hover .chart__pt { transform: scale(1.35); }
+  @keyframes draw { from { stroke-dashoffset: 1; } }
+  @keyframes areaIn { from { opacity: 0; } }
+
+  /* ---------- адаптив ---------- */
+  @media (max-width: 1000px) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'feed feed'
+        'net  cmp'
+        'net  path'
+        'upd  upd';
+    }
+    .bcard--network { min-height: 0; }
+  }
+  @media (max-width: 680px) {
+    .bento { grid-template-columns: 1fr; grid-template-areas: 'feed' 'net' 'cmp' 'path' 'upd'; gap: 12px; }
+    /* В одну колонку: везде одинаковые отступы, графика над текстом в общем потоке */
+    .bcard,
+    .bcard.bcard--feed,
+    .bcard.bcard--update,
+    .bcard--network {
+      min-height: 0;
+      justify-content: flex-start;
+      gap: 28px;
+      padding: 24px;
+    }
+    .bcard__body--narrow { max-width: none; }
+    .iso {
+      position: relative;
+      right: auto;
+      top: auto;
+      translate: none;
+      width: 132px;
+      height: 132px;
+      margin: 40px auto 8px;
+    }
+    .deck { margin: 12px auto 18px; }
+    .chart { position: relative; right: auto; top: auto; translate: none; width: 100%; order: -1; }
+    .avatars, .steps { min-height: 0; }
+    .steps__icon { width: 36px; height: 36px; }
+    .steps__label { font-size: 10px; }
+  }
+</style>

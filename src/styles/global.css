@@ -1,0 +1,307 @@
+/* ------------------------------------------------------------------
+   Speca — design tokens
+   Тёмная тема по умолчанию. Светлая добавится блоком [data-theme="light"].
+------------------------------------------------------------------- */
+
+/* Feature Mono (A. Vrublevskaya) — шрифт логотипа в Hero v2.
+   Файлы положить в public/fonts/. Пока их нет — берётся установленный
+   в системе шрифт, иначе JetBrains Mono (подгружается только для логотипа). */
+@font-face {
+  font-family: 'Feature Mono';
+  src: local('Feature Mono Bold'), local('FeatureMono-Bold'),
+       url('/fonts/FeatureMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Feature Mono';
+  src: local('Feature Mono Medium'), local('FeatureMono-Medium'),
+       url('/fonts/FeatureMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+/* Цвет текущей ниши — регистрируем, чтобы он плавно перетекал */
+@property --c1 { syntax: '<color>'; inherits: true; initial-value: #FF361C; }
+@property --c2 { syntax: '<color>'; inherits: true; initial-value: #DF2F18; }
+@property --c1-l { syntax: '<color>'; inherits: true; initial-value: #E8290B; }
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Тёмная тема (по умолчанию) ---------- */
+  --bg: #060608;
+  --bg-elev: #0d0d11;
+  --bg-elev-2: #14141a;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.14);
+  --line-hover: rgb(255 255 255 / 0.26);
+  --tint: rgb(255 255 255 / 0.02);        /* лёгкая заливка поверх фона */
+  --grid-line: rgb(255 255 255 / 0.05);
+  --watermark: rgb(255 255 255 / 0.022);  /* фоновые фигуры логотипа */
+  --text: #f3f3f5;
+  --text-2: #a4a4ae;
+  --text-3: #6c6c77;
+  --glass: rgb(6 6 8 / 0.7);               /* матовое стекло шапки и меню */
+  --shadow: rgb(0 0 0 / 0.45);
+  /* «Инверсия» — светлая плашка на тёмном фоне (и наоборот в светлой теме) */
+  --inverse-bg: #f4f4f6;
+  --inverse-text: #0b0b0d;
+  --inverse-muted: #3c3c44;
+  --inverse-line: rgb(0 0 0 / 0.14);
+  --inverse-watermark: rgb(0 0 0 / 0.035);
+  --title-from: #ffffff;
+  --title-to: #7d7d88;
+  --folder-veil-from: rgb(6 6 8 / 0.25);
+  --folder-veil-to: rgb(6 6 8 / 0.7);
+  /* Логотип Speca */
+  --logo-g1: #ffffff;
+  --logo-g2: #2f2f2f;
+  --logo-glyph: #000000;
+  --grain-opacity: 0.07;
+
+  --c1: #FF361C;
+  --c2: #DF2F18;
+  --c1-l: #E8290B;
+
+  /* Два шрифта: Tektur — заголовки и цифры, Onest — весь остальной текст */
+  --font-display: 'Tektur', 'Onest', system-ui, sans-serif;
+  --font-body: 'Onest', system-ui, sans-serif;
+  /* Логотип (не текст): Feature Mono */
+  --font-logo: 'Feature Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Скругления — единая система (по переключателю языка) */
+  --radius-lg: 16px;  /* карточки */
+  --radius: 10px;     /* контролы, плашки */
+  --radius-sm: 7px;   /* вложенные и мелкие элементы, теги */
+
+  --container: 1320px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --header-h: 72px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --niche-dur: 900ms;
+
+  transition:
+    --c1 var(--niche-dur) var(--ease-in-out),
+    --c2 var(--niche-dur) var(--ease-in-out),
+    --c1-l var(--niche-dur) var(--ease-in-out);
+}
+
+/* --ink — цвет ниши для текста, линий и обводок.
+   В тёмной теме это сам цвет ниши, в светлой — его насыщенный тёмный вариант (--c1-l).
+   Пересчитывается на каждом элементе, поэтому работает и с локальными --c1/--c1-l. */
+*, *::before, *::after { --ink: var(--c1); }
+:root[data-theme='light'] *,
+:root[data-theme='light'] *::before,
+:root[data-theme='light'] *::after { --ink: var(--c1-l); }
+
+/* ---------- Светлая тема ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f4f7;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #ececf1;
+  --line: rgb(12 12 24 / 0.09);
+  --line-strong: rgb(12 12 24 / 0.15);
+  --line-hover: rgb(12 12 24 / 0.32);
+  --tint: rgb(12 12 24 / 0.025);
+  --grid-line: rgb(12 12 24 / 0.06);
+  --watermark: rgb(12 12 24 / 0.03);
+  --text: #0d0d11;
+  --text-2: #50505a;
+  --text-3: #8b8b95;
+  --glass: rgb(244 244 247 / 0.72);
+  --shadow: rgb(20 20 40 / 0.14);
+  --inverse-bg: #0d0d11;
+  --inverse-text: #f3f3f5;
+  --inverse-muted: #b4b4be;
+  --inverse-line: rgb(255 255 255 / 0.18);
+  --inverse-watermark: rgb(255 255 255 / 0.04);
+  --title-from: #0d0d11;
+  --title-to: #6c6c78;
+  --folder-veil-from: rgb(255 255 255 / 0);
+  --folder-veil-to: rgb(255 255 255 / 0.15);
+  --logo-g1: #3a3a42;
+  --logo-g2: #0b0b0d;
+  --logo-glyph: #ffffff;
+  --grain-opacity: 0.035;
+}
+
+/* Анимация смены темы: новый вид раскрывается кругом от кнопки (см. Header) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ------------------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  position: relative;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+h1, h2, h3, p { margin: 0; }
+
+::selection { background: var(--c1); color: #000; }
+
+/* Цвет ниши как цвет текста: в светлой теме слегка затемняем (жёлтый/бирюзовый на белом) */
+.accent-text { color: var(--ink); }
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.container {
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Зерно поверх всей страницы */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --niche-dur: 0ms; }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Общие элементы секций
+------------------------------------------------------------------- */
+.section {
+  position: relative;
+  padding-block: clamp(88px, 11vw, 160px);
+}
+.section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  max-width: 780px;
+  margin-bottom: clamp(40px, 5vw, 72px);
+}
+.section-head--center {
+  align-items: center;
+  text-align: center;
+  margin-inline: auto;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--tint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.eyebrow__dot {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 12px var(--ink);
+}
+.eyebrow__dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+  animation: ping 2s var(--ease-out) infinite;
+}
+@keyframes ping { from { opacity: 0.9; transform: scale(0.6); } to { opacity: 0; transform: scale(1.6); } }
+
+.h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: 88%;
+  font-size: clamp(32px, 4.6vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.lead {
+  max-width: 36em;
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+/* Появление при прокрутке (класс .js ставится в <head>) */
+.js [data-inview] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 90ms);
+}
+.js [data-inview].is-in { opacity: 1; transform: none; }
+
+/* Буквенный «перекат» заголовка при наведении (используется в карточках) */
+/* Обрезка по каждому слову — корректно и для многострочных заголовков */
+.roll { position: relative; display: inline-block; vertical-align: top; }
+.roll__layer { display: block; }
+.roll__layer--accent { position: absolute; inset: 0; color: var(--ink); }
+.roll__w {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.roll__c {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  transition-delay: calc(var(--i) * 18ms);
+}
+.roll__layer--accent .roll__c { transform: translateY(115%); }
+.roll-host:hover .roll__layer--base .roll__c { transform: translateY(-115%); }
+.roll-host:hover .roll__layer--accent .roll__c { transform: none; }

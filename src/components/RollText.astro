@@ -1,0 +1,23 @@
+---
+/**
+ * Заголовок с побуквенным «перекатом» при наведении на родителя с классом .roll-host:
+ * базовые буквы уезжают вверх, снизу выезжает копия в акцентном цвете.
+ */
+interface Props { text: string }
+const { text } = Astro.props;
+
+let n = 0;
+const words = text.split(' ').map((w) => Array.from(w).map((ch) => ({ ch, i: n++ })));
+---
+<span class="roll">
+  {['base', 'accent'].map((layer) => (
+    <span class={`roll__layer roll__layer--${layer}`} aria-hidden={layer === 'accent' ? 'true' : undefined}>
+      {words.map((w, wi) => (
+        <>
+          <span class="roll__w">{w.map(({ ch, i }) => <span class="roll__c" style={`--i:${i}`}>{ch}</span>)}</span>
+          {wi < words.length - 1 && ' '}
+        </>
+      ))}
+    </span>
+  ))}
+</span>

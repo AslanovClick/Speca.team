@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+import { useDict } from '../i18n';
+import CursorGrid from '../components/CursorGrid.astro';
+
+const t = useDict(Astro.currentLocale);
+const lang = Astro.currentLocale ?? 'uk';
+---
+<!doctype html>
+<html lang={lang} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <script is:inline>
+      // До отрисовки: включаем JS-анимации и сохранённую тему (без вспышки)
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        try {
+          var t = localStorage.getItem('speca-theme');
+          if (t === 'light' || t === 'dark') d.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <meta name="theme-color" content="#060608" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Onest:wght@400;500;600;700&family=Tektur:wdth,wght@75..100,500..800&display=swap"
+    />
+  </head>
+  <body>
+    <CursorGrid />
+    <slot />
+    <div class="grain" aria-hidden="true"></div>
+    <script>
+      // Появление элементов [data-inview] при прокрутке
+      const items = document.querySelectorAll<HTMLElement>('[data-inview]');
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+        items.forEach((el) => el.classList.add('is-in'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => entries.forEach((e) => {
+            if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+          }),
+          { rootMargin: '0px 0px -4% 0px', threshold: 0.02 },
+        );
+        items.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

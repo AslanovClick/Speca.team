@@ -1,0 +1,558 @@
+---
+import SpecaMark from './SpecaMark.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale);
+const h = t.hero2;
+const first = niches[0];
+
+// Домен ниши после «SPECA.» — BIKE, SKI, FISHING…
+const suffix = (domain: string) => domain.split('.')[1].toUpperCase();
+const maxLen = Math.max(...niches.map((n) => suffix(n.domain).length));
+const firstWord = suffix(first.domain);
+const statKeys = ['products', 'brands', 'shops', 'categories'] as const;
+const fmt = new Intl.NumberFormat('uk-UA');
+---
+<section class="hero2" id="top" data-hero2>
+  <div class="hero2__bg" aria-hidden="true">
+    <div class="hero2__grid"></div>
+    <div class="hero2__glow"></div>
+  </div>
+
+  <div class="container hero2__inner">
+    <p class="eyebrow" data-reveal style="--d:0">
+      <span class="eyebrow__dot"></span>
+      {h.eyebrow}
+    </p>
+
+    <h1 class="hero2__title">
+      {h.title.map((line, i) => (
+        <span class:list={['hero2__line', { 'hero2__line--soft': i === 1 }]} data-reveal style={`--d:${1 + i}`}>
+          <span>{line}</span>
+        </span>
+      ))}
+    </h1>
+
+    <p class="hero2__lead" data-reveal style="--d:3">{h.lead}</p>
+
+    <div class="hero2__brand" data-brand data-reveal style="--d:4">
+      <p class="brandline" aria-live="polite">
+        <SpecaMark class="brandline__mark" />
+        <span class="brandline__speca">SPECA</span><span class="brandline__dot">.</span><span class="flip" data-flip aria-hidden="true">
+          {Array.from({ length: maxLen }, (_, i) => (
+            <span class:list={['slot', { 'is-on': i < firstWord.length }]}>
+              <span class="cube">
+                <span class="face face--front">{firstWord[i] ?? ''}</span>
+                <span class="face face--bottom"></span>
+              </span>
+            </span>
+          ))}
+        </span>
+        <span class="visually-hidden" data-flip-label>{first.domain}</span>
+      </p>
+
+      <ul class="tags" data-tags>
+        {h.tags[first.id].map((tag, i) => <li class="tag" style={`--i:${i}`}>{tag}</li>)}
+      </ul>
+
+      <div class="dots" role="tablist" aria-label={h.pickNiche}>
+        {niches.map((n, i) => (
+          <button
+            class:list={['dots__item', { 'is-active': i === 0 }]}
+            type="button"
+            role="tab"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            aria-label={n.domain}
+            title={n.domain}
+            tabindex={i === 0 ? 0 : -1}
+            data-pick={i}
+          ><span class="dots__bar"><span class="dots__fill"></span></span></button>
+        ))}
+      </div>
+    </div>
+
+    <div class="stats2" data-stats data-reveal style="--d:5">
+      <dl class="stats2__grid">
+        {statKeys.map((key, i) => (
+          <div class="stats2__item" data-stat-item style={`--i:${i}`}>
+            <dt class="stats2__value"><span data-stat={key}>{fmt.format(first.stats[key])}</span></dt>
+            <dd class="stats2__label">{h.statLabels[key]}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </div>
+</section>
+
+<script
+  is:inline
+  define:vars={{
+    DATA: {
+      niches: niches.map(({ id, domain, c1, c2, ink, status, stats }) => ({
+        id, domain, c1, c2, ink, status, stats,
+        word: domain.split('.')[1].toUpperCase(),
+        tags: t.hero2.tags[id],
+      })),
+    },
+  }}
+>
+  window.__SPECA_HERO2__ = DATA;
+</script>
+
+<script>
+  type Stats = Record<'products' | 'brands' | 'shops' | 'categories', number>;
+  type N = { id: string; domain: string; c1: string; c2: string; ink: string; status: 'live' | 'soon'; stats: Stats; word: string; tags: string[] };
+  const { niches } = (window as any).__SPECA_HERO2__ as { niches: N[] };
+
+  const hero = document.querySelector<HTMLElement>('[data-hero2]')!;
+  const brand = hero.querySelector<HTMLElement>('[data-brand]')!;
+  const slots = [...hero.querySelectorAll<HTMLElement>('[data-flip] .slot')];
+  const flipLabel = hero.querySelector<HTMLElement>('[data-flip-label]')!;
+  const tagsEl = hero.querySelector<HTMLUListElement>('[data-tags]')!;
+  const tabs = [...hero.querySelectorAll<HTMLButtonElement>('[data-pick]')];
+  const statEls = [...hero.querySelectorAll<HTMLElement>('[data-stat]')];
+  const statItems = [...hero.querySelectorAll<HTMLElement>('[data-stat-item]')];
+
+  const root = document.documentElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fmt = new Intl.NumberFormat('uk-UA');
+  let current = 0;
+
+  /* ---------- Flip-домен: каждый символ — кубик, поворачивается по X ---------- */
+  const FLIP_MS = 700;
+  function flipTo(word: string, animate = !reduced) {
+    const len = Math.max(word.length, 1);
+    slots.forEach((slot, i) => {
+      const cube = slot.firstElementChild as HTMLElement;
+      const front = cube.children[0] as HTMLElement;
+      const back = cube.children[1] as HTMLElement;
+      const next = word[i] ?? '';
+      const on = i < word.length;
+      // волна задержек по синусу, как в референсе
+      const delay = Math.sin((Math.min(i, len) / len) * (Math.PI / 2)) * 260;
+
+      if (!animate) {
+        front.textContent = next;
+        slot.classList.toggle('is-on', on);
+        return;
+      }
+      if (front.textContent === next && !cube.classList.contains('is-flipping')) {
+        slot.style.transitionDelay = `${delay}ms`;
+        slot.classList.toggle('is-on', on);
+        return;
+      }
+      back.textContent = next;
+      cube.style.transitionDelay = `${delay}ms`;
+      slot.style.transitionDelay = `${on ? 0 : delay + FLIP_MS * 0.5}ms`;
+      slot.classList.toggle('is-on', on);
+      cube.classList.remove('no-anim');
+      cube.classList.add('is-flipping');
+      window.setTimeout(() => {
+        front.textContent = next;
+        cube.classList.add('no-anim');
+        cube.classList.remove('is-flipping');
+        void cube.offsetWidth;
+        cube.classList.remove('no-anim');
+      }, FLIP_MS + delay + 20);
+    });
+  }
+
+  /* ---------- Теги ---------- */
+  function setTags(tags: string[]) {
+    tagsEl.classList.add('is-out');
+    window.setTimeout(() => {
+      tagsEl.replaceChildren(
+        ...tags.map((tag, i) => {
+          const li = document.createElement('li');
+          li.className = 'tag';
+          li.style.setProperty('--i', String(i));
+          li.textContent = tag;
+          return li;
+        }),
+      );
+      tagsEl.classList.remove('is-out');
+    }, reduced ? 0 : 220);
+  }
+
+  /* ---------- Счётчики: пересчёт от текущего значения к новому ---------- */
+  const shown = statEls.map((el) => Number(el.textContent!.replace(/\D/g, '')));
+  const rafs: number[] = [];
+  function countTo(stats: Stats) {
+    statEls.forEach((el, i) => {
+      const target = stats[el.dataset.stat as keyof Stats];
+      const from = shown[i];
+      cancelAnimationFrame(rafs[i]);
+      if (reduced) { shown[i] = target; el.textContent = fmt.format(target); return; }
+      const start = performance.now() + i * 70;
+      const dur = 1200;
+      const tick = (now: number) => {
+        const p = Math.min(1, Math.max(0, (now - start) / dur));
+        const e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p); // easeOutExpo
+        shown[i] = Math.round(from + (target - from) * e);
+        el.textContent = fmt.format(shown[i]);
+        if (p < 1) rafs[i] = requestAnimationFrame(tick);
+      };
+      rafs[i] = requestAnimationFrame(tick);
+    });
+    statItems.forEach((item) => {
+      item.classList.remove('is-pulse');
+      void item.offsetWidth;
+      item.classList.add('is-pulse');
+    });
+  }
+
+  /* ---------- Выбор ниши ---------- */
+  function select(i: number, { focus = false } = {}) {
+    const next = (i + niches.length) % niches.length;
+    if (next === current) return;
+    current = next;
+    const n = niches[current];
+
+    root.style.setProperty('--c1', n.c1);
+    root.style.setProperty('--c2', n.c2);
+    root.style.setProperty('--c1-l', n.ink);
+
+    flipTo(n.word);
+    flipLabel.textContent = n.domain;
+    setTags(n.tags);
+    countTo(n.stats);
+
+    tabs.forEach((b, k) => {
+      const on = k === current;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    if (focus) tabs[current].focus();
+  }
+
+  tabs.forEach((b, k) => {
+    b.addEventListener('click', () => select(k));
+    b.addEventListener('keydown', (e) => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (step) { e.preventDefault(); select(current + step, { focus: true }); }
+    });
+  });
+
+  /* ---------- Автопереключение: ритм задаёт полоса активной точки ---------- */
+  if (!reduced) {
+    hero.classList.add('is-autoplay');
+    tabs.forEach((b) =>
+      b.addEventListener('animationend', (e) => {
+        if (e.animationName === 'dotFill' && b.classList.contains('is-active')) select(current + 1);
+      }),
+    );
+    // Над логотипом — замедляемся, над статистикой — останавливаемся
+    const SLOW = 0.35;
+    let rate = 1;
+    const fillAnim = () =>
+      hero.querySelector<HTMLElement>('.dots__item.is-active .dots__fill')?.getAnimations()[0];
+    const applyRate = () => {
+      const a = fillAnim();
+      if (a && a.playbackRate !== rate) a.updatePlaybackRate(rate);
+    };
+    const setRate = (r: number) => { rate = r; applyRate(); };
+    // новая анимация активной полоски стартует после смены ниши — подхватываем скорость
+    tabs.forEach((b) => b.addEventListener('animationstart', () => requestAnimationFrame(applyRate)));
+    brand.addEventListener('pointerenter', () => setRate(SLOW));
+    brand.addEventListener('pointerleave', () => setRate(1));
+
+    const stats = hero.querySelector<HTMLElement>('[data-stats]')!;
+    const pause = (on: boolean) => hero.classList.toggle('is-paused', on);
+    stats.addEventListener('pointerenter', () => pause(true));
+    stats.addEventListener('pointerleave', () => pause(false));
+    brand.addEventListener('focusin', () => pause(true));
+    brand.addEventListener('focusout', () => pause(false));
+    new IntersectionObserver(([e]) => hero.classList.toggle('is-offscreen', !e.isIntersecting), { threshold: 0.15 }).observe(hero);
+
+    // Появление: домен «перелистывается» из пустоты в BIKE
+    flipTo('', false);
+    slots.forEach((s, i) => s.classList.toggle('is-on', i < niches[0].word.length));
+    window.setTimeout(() => flipTo(niches[0].word), 900);
+
+    // Счётчики стартуют с нуля
+    statEls.forEach((el, i) => { shown[i] = 0; el.textContent = '0'; });
+    window.setTimeout(() => countTo(niches[0].stats), 1000);
+  }
+</script>
+
+<style>
+  .hero2 {
+    --cycle: 2600ms;
+    --cell: 64px;
+    position: relative;
+    isolation: isolate;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding-top: calc(var(--header-h) + clamp(24px, 4.5vh, 52px));
+    padding-bottom: 32px;
+    overflow: hidden;
+  }
+
+  /* ---------- фон ---------- */
+  .hero2__bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+  .hero2__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, #000 25%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, #000 25%, transparent 80%);
+  }
+  .hero2__glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(40% 32% at 50% 62%, color-mix(in oklab, var(--c1) 17%, transparent), transparent 75%);
+  }
+
+  .hero2__inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* ---------- текст ---------- */
+  .eyebrow { margin-bottom: 28px; }
+  .hero2__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(36px, 6vw, 86px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .hero2__line { display: block; overflow: hidden; padding-bottom: 0.04em; }
+  .hero2__line > span { display: inline-block; }
+  .hero2__line--soft > span {
+    background: linear-gradient(180deg, var(--title-from) 20%, var(--title-to) 110%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero2__lead {
+    max-width: 38em;
+    margin-top: 24px;
+    font-size: clamp(16px, 1.2vw, 18px);
+    line-height: 1.65;
+    color: var(--text-2);
+  }
+
+  /* ---------- логотип с flip-доменом ---------- */
+  .hero2__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: clamp(28px, 4.5vh, 52px);
+  }
+  .brandline {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-logo);
+    font-weight: 700;
+    font-size: clamp(28px, 5.2vw, 72px);
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .brandline :global(.brandline__mark) {
+    width: 1em;
+    height: 1em;
+    margin-right: 0.32em;
+    filter: drop-shadow(0 0 24px color-mix(in oklab, var(--c1) 45%, transparent));
+  }
+  .brandline__speca { color: var(--text); }
+  .brandline__dot { color: var(--ink); }
+
+  .flip {
+    display: inline-flex;
+    color: var(--ink);
+    perspective: 1000px;
+  }
+  .slot {
+    display: inline-block;
+    width: 0;
+    transition: width 0.5s var(--ease-out);
+  }
+  .slot.is-on { width: 1ch; }
+  .cube {
+    position: relative;
+    display: block;
+    width: 1ch;
+    height: 1.2em;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    transition: opacity 0.7s;
+  }
+  .face--front { transform: translateZ(0.6em); }
+  .face--bottom { transform: rotateX(-90deg) translateZ(0.6em); opacity: 0; }
+  .cube.is-flipping { transform: rotateX(90deg); }
+  .cube.is-flipping .face--front { opacity: 0; }
+  .cube.is-flipping .face--bottom { opacity: 1; }
+  .cube.no-anim,
+  .cube.no-anim .face { transition: none !important; }
+
+  /* ---------- теги ---------- */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    min-height: 32px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tags :global(.tag) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: color-mix(in oklab, var(--c1) 6%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 30%, var(--line));
+    border-radius: var(--radius-sm);
+    animation: tagIn 0.5s var(--ease-out) both;
+    animation-delay: calc(var(--i) * 45ms);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .tags :global(.tag)::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .tags.is-out :global(.tag) {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition-delay: calc(var(--i) * 25ms);
+  }
+  @keyframes tagIn { from { opacity: 0; transform: translateY(8px); } }
+
+  /* ---------- переключатель ниш ---------- */
+  .dots { display: flex; gap: 4px; margin-top: 26px; }
+  .dots__item {
+    display: grid;
+    align-items: center;
+    width: 30px;
+    height: 20px;
+  }
+  .dots__bar {
+    position: relative;
+    height: 2px;
+    background: var(--line-strong);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: background-color 0.2s;
+  }
+  .dots__item:hover .dots__bar { background: var(--line-hover); }
+  .dots__fill {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .dots__item.is-active .dots__fill { transform: scaleX(1); }
+  .is-autoplay .dots__item.is-active .dots__fill { animation: dotFill var(--cycle) linear forwards; }
+  .is-autoplay.is-paused .dots__item.is-active .dots__fill,
+  .is-autoplay.is-offscreen .dots__item.is-active .dots__fill { animation-play-state: paused; }
+  @keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+  /* ---------- статистика ---------- */
+  .stats2 {
+    width: 100%;
+    margin-top: auto;
+    padding-top: clamp(32px, 5vh, 64px);
+    text-align: left;
+  }
+  .stats2__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--line);
+  }
+  .stats2__item {
+    position: relative;
+    padding: 24px 24px 4px;
+    border-left: 1px solid var(--line);
+  }
+  .stats2__item:first-child { border-left: 0; padding-left: 0; }
+  .stats2__item::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ink), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .stats2__item:first-child::before { left: 0; }
+  .stats2__item.is-pulse::before {
+    animation: statLine 1.2s var(--ease-out) both;
+    animation-delay: calc(var(--i) * 70ms);
+  }
+  @keyframes statLine {
+    0% { transform: scaleX(0); opacity: 1; }
+    60% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0; }
+  }
+  .stats2__value {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-stretch: 88%;
+    font-size: clamp(30px, 3.4vw, 52px);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .stats2__label { margin: 10px 0 0; font-size: 14px; color: var(--text-2); }
+
+  /* ---------- появление ---------- */
+  [data-reveal] {
+    animation: rise 1s var(--ease-out) both;
+    animation-delay: calc(var(--d) * 110ms + 120ms);
+  }
+  .hero2__line[data-reveal] { animation: none; }
+  .hero2__line[data-reveal] > span {
+    animation: lineUp 1.05s var(--ease-out) both;
+    animation-delay: calc(var(--d) * 110ms + 120ms);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+  @keyframes lineUp { from { transform: translateY(105%); } }
+
+  /* ---------- адаптив ---------- */
+  @media (max-width: 720px) {
+    .hero2 { padding-top: calc(var(--header-h) + 28px); }
+    .eyebrow { font-size: 10.5px; margin-bottom: 22px; }
+    .hero2__title { font-size: clamp(30px, 9vw, 52px); }
+    .brandline { font-size: clamp(22px, 8.4vw, 44px); }
+    .tags :global(.tag) { font-size: 12px; padding: 5px 10px 5px 8px; }
+    .stats2__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stats2__item { padding: 20px 16px 16px; }
+    .stats2__item:nth-child(odd) { border-left: 0; padding-left: 0; }
+    .stats2__item:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+</style>

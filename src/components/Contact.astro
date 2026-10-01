@@ -1,0 +1,597 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const dict = useDict(Astro.currentLocale);
+const t = dict.contact;
+const hints = dict.niches.hints;
+const f = t.form;
+const channelIcons: IconName[] = ['mail', 'telegram', 'phone'];
+---
+<section class="section contact" id="contact" data-contact>
+  <div class="contact__bg" aria-hidden="true">
+    <svg class="contact__union" viewBox="0 0 1092 1410" preserveAspectRatio="xMidYMid meet">
+      <path fill-rule="evenodd" d="M820.409 839.187L944.889 713.358V953.007L1092 808.102V1125.77L803.438 1410H288.562L0 1125.77V808.102L820.409 0V839.187ZM161.251 966.935L546 1345.91L729.883 1164.79V936.291L616.725 1047.75V518.293L161.251 966.935Z" />
+    </svg>
+    <div class="contact__glow"></div>
+  </div>
+
+  <div class="container contact__inner">
+    <div class="contact__info">
+      <header class="section-head contact__head">
+        <h2 class="h2" data-inview>{t.title}</h2>
+        <p class="lead" data-inview style="--d:1">{t.lead}</p>
+      </header>
+
+      <p class="online" data-inview style="--d:2"><span class="online__dot"></span>{t.online}</p>
+
+      <ul class="channels" data-inview data-cursor-calm style="--d:2">
+        {t.channels.map((ch, i) => (
+          <li>
+            <a class="channel" href={ch.href}>
+              <span class="channel__icon"><Icon name={channelIcons[i]} size={20} /></span>
+              <span class="channel__text">
+                <span class="channel__label">{ch.label}</span>
+                <span class="channel__value">{ch.value}</span>
+              </span>
+              <span class="channel__arrow"><Icon name="arrow-up-right" size={18} /></span>
+              <span class="channel__line" aria-hidden="true"></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="form-card" data-form-card data-inview style="--d:1">
+      <form class="form" novalidate data-form>
+        <h3 class="form__title">{f.title}</h3>
+
+        <div class="form__grid">
+          <div class="field">
+            <input class="field__input" id="f-name" name="name" type="text" autocomplete="name" placeholder=" " required />
+            <label class="field__label" for="f-name">{f.name} *</label>
+            <span class="field__error">{f.required}</span>
+          </div>
+          <div class="field">
+            <input class="field__input" id="f-company" name="company" type="text" autocomplete="organization" placeholder=" " />
+            <label class="field__label" for="f-company">{f.company}</label>
+          </div>
+          <div class="field field--wide">
+            <input class="field__input" id="f-contact" name="contact" type="text" autocomplete="email" placeholder=" " required data-contact-field />
+            <label class="field__label" for="f-contact">{f.contact} *</label>
+            <span class="field__error">{f.invalidContact}</span>
+          </div>
+        </div>
+
+        <fieldset class="group">
+          <legend class="group__legend">{f.format}</legend>
+          <div class="chips">
+            {f.formats.map((fmt, i) => (
+              <label class="chip">
+                <input type="radio" name="format" value={fmt} checked={i === 0} />
+                <span>{fmt}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend class="group__legend">{f.niches}</legend>
+          <div class="chips">
+            {niches.map((n) => (
+              <label class="chip chip--niche" style={`--nc:${n.c1};--nc-l:${n.ink}`}>
+                <input type="checkbox" name="niches" value={n.id} data-niche-color={n.c1} data-niche-color2={n.c2} data-niche-ink={n.ink} />
+                <span><i class="chip__dot"></i>{n.domain.replace('speca', '')}</span>
+                <span class="chip__tip" role="tooltip"><b>{n.domain}</b>{hints[n.id]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div class="field field--wide">
+          <textarea class="field__input field__input--area" id="f-message" name="message" rows="3" placeholder=" "></textarea>
+          <label class="field__label" for="f-message">{f.message}</label>
+        </div>
+
+        <label class="consent">
+          <input type="checkbox" name="consent" required data-consent />
+          <span class="consent__box"><Icon name="check" size={14} stroke={2.4} /></span>
+          <span>{f.consent}</span>
+        </label>
+        <span class="consent__error">{f.consentRequired}</span>
+
+        <button class="submit" type="submit">
+          <span>{f.submit}</span>
+          <Icon name="arrow-right" size={18} class="submit__icon" />
+        </button>
+      </form>
+
+      <div class="success" data-success hidden>
+        <span class="success__icon"><Icon name="check" size={28} stroke={2.2} /></span>
+        <h3 class="success__title">{f.successTitle}</h3>
+        <p class="success__text">{f.successText}</p>
+        <button class="success__again" type="button" data-again>{f.again}</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>('[data-contact]')!;
+  const card = section.querySelector<HTMLElement>('[data-form-card]')!;
+  const form = section.querySelector<HTMLFormElement>('[data-form]')!;
+  const success = section.querySelector<HTMLElement>('[data-success]')!;
+
+  // Подсветка рамки формы за курсором
+  card.addEventListener('pointermove', (e) => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--px', `${e.clientX - r.left}px`);
+    card.style.setProperty('--py', `${e.clientY - r.top}px`);
+  });
+
+  // Выбранная ниша окрашивает секцию в свой цвет
+  const nicheBoxes = [...form.querySelectorAll<HTMLInputElement>('input[name="niches"]')];
+  nicheBoxes.forEach((box) =>
+    box.addEventListener('change', () => {
+      const picked = box.checked ? box : nicheBoxes.filter((b) => b.checked).pop();
+      if (picked) {
+        section.style.setProperty('--c1', picked.dataset.nicheColor!);
+        section.style.setProperty('--c2', picked.dataset.nicheColor2!);
+        section.style.setProperty('--c1-l', picked.dataset.nicheInk!);
+      } else {
+        section.style.removeProperty('--c1');
+        section.style.removeProperty('--c2');
+        section.style.removeProperty('--c1-l');
+      }
+    }),
+  );
+
+  // Подсказки к нишам: удерживаем внутри экрана; на телефоне — по долгому нажатию
+  const nicheChips = [...form.querySelectorAll<HTMLElement>('.chip--niche')];
+  const placeTip = (chip: HTMLElement) => {
+    const tip = chip.querySelector<HTMLElement>('.chip__tip');
+    if (!tip) return;
+    chip.style.setProperty('--shift', '0px');
+    const c = chip.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const vw = document.documentElement.clientWidth;
+    const center = c.left + c.width / 2;
+    const pad = 12;
+    let shift = 0;
+    if (center - w / 2 < pad) shift = pad - (center - w / 2);
+    else if (center + w / 2 > vw - pad) shift = vw - pad - (center + w / 2);
+    chip.style.setProperty('--shift', `${Math.round(shift)}px`);
+  };
+  nicheChips.forEach((chip) => {
+    chip.addEventListener('pointerenter', () => placeTip(chip));
+    chip.addEventListener('focusin', () => placeTip(chip));
+
+    let timer = 0;
+    let longPress = false;
+    const hide = () => { window.clearTimeout(timer); chip.classList.remove('is-tip'); };
+    chip.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      longPress = false;
+      timer = window.setTimeout(() => {
+        longPress = true;
+        placeTip(chip);
+        nicheChips.forEach((c) => c !== chip && c.classList.remove('is-tip'));
+        chip.classList.add('is-tip');
+      }, 380);
+    });
+    chip.addEventListener('pointerup', () => {
+      window.clearTimeout(timer);
+      if (longPress) window.setTimeout(() => chip.classList.remove('is-tip'), 1400);
+    });
+    chip.addEventListener('pointercancel', hide);
+    chip.addEventListener('pointerleave', (e) => { if (e.pointerType === 'touch') window.clearTimeout(timer); });
+    chip.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Долгое нажатие показывает подсказку и не переключает нишу
+    chip.addEventListener('click', (e) => {
+      if (longPress) { e.preventDefault(); longPress = false; }
+    });
+  });
+
+  // Валидация
+  const isContact = (v: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^\+?[\d\s()-]{9,}$/.test(v);
+
+  const check = (input: HTMLInputElement) => {
+    const v = input.value.trim();
+    const ok = input.hasAttribute('data-contact-field') ? isContact(v) : !input.required || v.length > 0;
+    input.closest('.field')?.classList.toggle('is-invalid', !ok);
+    return ok;
+  };
+  const required = [...form.querySelectorAll<HTMLInputElement>('.field__input[required]')];
+  required.forEach((input) =>
+    input.addEventListener('input', () => {
+      if (input.closest('.field')?.classList.contains('is-invalid')) check(input);
+    }),
+  );
+  const consent = form.querySelector<HTMLInputElement>('[data-consent]')!;
+  consent.addEventListener('change', () => form.classList.toggle('consent-missing', !consent.checked && form.classList.contains('was-submitted')));
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    form.classList.add('was-submitted');
+    const fieldsOk = required.map(check).every(Boolean);
+    const consentOk = consent.checked;
+    form.classList.toggle('consent-missing', !consentOk);
+    if (!fieldsOk || !consentOk) {
+      form.querySelector<HTMLElement>('.is-invalid .field__input')?.focus();
+      return;
+    }
+    // TODO: подключить отправку заявки (email / Telegram / CRM). Пока — заглушка.
+    const data = Object.fromEntries(new FormData(form).entries());
+    console.info('[Speca] заявка (заглушка):', data);
+    form.hidden = true;
+    success.hidden = false;
+    success.querySelector<HTMLElement>('[data-again]')?.focus();
+  });
+
+  success.querySelector('[data-again]')!.addEventListener('click', () => {
+    form.reset();
+    form.classList.remove('was-submitted', 'consent-missing');
+    section.style.removeProperty('--c1');
+    section.style.removeProperty('--c2');
+    section.style.removeProperty('--c1-l');
+    success.hidden = true;
+    form.hidden = false;
+  });
+</script>
+
+<style>
+  .contact {
+    overflow: hidden;
+    transition: --c1 0.6s var(--ease-in-out), --c2 0.6s var(--ease-in-out), --c1-l 0.6s var(--ease-in-out);
+  }
+  .contact__bg { position: absolute; inset: 0; pointer-events: none; }
+  .contact__union {
+    position: absolute;
+    left: -8%;
+    bottom: -30%;
+    width: min(62vw, 820px);
+    fill: var(--watermark);
+  }
+  .contact__glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(40% 50% at 75% 55%, color-mix(in oklab, var(--c1) 12%, transparent), transparent 70%);
+    transition: background 0.6s;
+  }
+
+  .contact__inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(40px, 6vw, 96px);
+    align-items: start;
+  }
+  .contact__head { margin-bottom: 28px; }
+
+  .online { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
+  .online__dot {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1CFE82;
+    box-shadow: 0 0 10px #1CFE82;
+  }
+  .online__dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid #1CFE82;
+    animation: ping 2s var(--ease-out) infinite;
+  }
+
+  /* ---------- каналы связи ---------- */
+  .channels { margin: 32px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .channel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .channel__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    transition: background-color 0.4s, color 0.4s, border-color 0.4s;
+  }
+  .channel__text { display: grid; gap: 0; }
+  .channel__label { font-size: 13px; line-height: 1.3; color: var(--text-3); }
+  .channel__value {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-stretch: 88%;
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.2;
+    transition: transform 0.5s ease;
+    transform-origin: left;
+  }
+  .channel__arrow { margin-left: auto; color: var(--text-3); transition: color 0.4s, transform 0.5s var(--ease-out); }
+  .channel__line {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 35%, transparent) 30%, var(--ink) 50%, color-mix(in oklab, var(--ink) 35%, transparent) 70%, transparent);
+    transition: width 1s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  .channel:hover .channel__line, .channel:focus-visible .channel__line { width: 100%; }
+  .channel:hover .channel__icon { background: var(--c1); border-color: var(--c1); color: #000; }
+  .channel:hover .channel__value { transform: scale(1.04); }
+  .channel:hover .channel__arrow { color: var(--text); transform: translate(3px, -3px); }
+
+  /* ---------- карточка формы ---------- */
+  .form-card {
+    --px: 50%;
+    --py: 0%;
+    position: relative;
+    padding: clamp(24px, 3vw, 40px);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--tint), transparent), var(--bg-elev);
+    box-shadow: inset 0 0 0 1px var(--line), 0 40px 80px var(--shadow);
+  }
+  /* Светящаяся рамка вокруг курсора */
+  .form-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: radial-gradient(360px circle at var(--px) var(--py), color-mix(in oklab, var(--c1) 70%, transparent), transparent 60%);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  .form-card:hover::before, .form-card:focus-within::before { opacity: 1; }
+
+  .form { display: grid; gap: 22px; }
+  .form[hidden] { display: none; }
+  .form__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(20px, 1.8vw, 26px);
+    text-transform: uppercase;
+  }
+  .form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .field { position: relative; }
+  .field--wide { grid-column: 1 / -1; }
+  .field__input {
+    width: 100%;
+    height: 58px;
+    padding: 24px 16px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--tint);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
+  }
+  .field__input--area { height: auto; min-height: 110px; padding-top: 28px; resize: vertical; }
+  .field__input:hover { border-color: var(--line-hover); }
+  .field__input:focus {
+    border-color: var(--ink);
+    background: var(--tint);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--c1) 14%, transparent);
+  }
+  .field__label {
+    position: absolute;
+    left: 17px;
+    top: 19px;
+    font-size: 15px;
+    color: var(--text-3);
+    pointer-events: none;
+    transform-origin: left top;
+    transition: transform 0.25s var(--ease-out), color 0.25s;
+  }
+  .field__input:focus + .field__label,
+  .field__input:not(:placeholder-shown) + .field__label {
+    transform: translateY(-10px) scale(0.78);
+    color: var(--text-2);
+  }
+  .field__error, .consent__error {
+    display: none;
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: #ff6b5e;
+  }
+  .field.is-invalid .field__input { border-color: #ff6b5e; }
+  .field.is-invalid .field__error { display: block; }
+
+  .group { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .group__legend { margin-bottom: 12px; padding: 0; font-size: 14px; font-weight: 500; color: var(--text-2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip input + span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+  }
+  .chip:hover input + span { border-color: var(--line-hover); color: var(--text); }
+  .chip input:checked + span {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+  .chip input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .chip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nc); box-shadow: 0 0 8px var(--nc); }
+  /* Подсказка к нише */
+  .chip__tip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    z-index: 5;
+    display: grid;
+    gap: 2px;
+    width: max-content;
+    max-width: 230px;
+    padding: 9px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elev-2);
+    box-shadow: 0 14px 30px var(--shadow);
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--text-2);
+    opacity: 0;
+    translate: calc(-50% + var(--shift, 0px)) 4px;
+    pointer-events: none;
+    transition: opacity 0.2s, translate 0.25s var(--ease-out);
+  }
+  .chip--niche { --nc-ink: var(--nc); }
+  :global([data-theme='light']) .chip--niche { --nc-ink: var(--nc-l); }
+  .chip__tip b { font-weight: 600; color: var(--nc-ink); }
+  .chip__tip::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - var(--shift, 0px));
+    top: 100%;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    background: var(--bg-elev-2);
+    border-right: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+    transform: rotate(45deg);
+  }
+  @media (hover: hover) {
+    .chip:hover .chip__tip { opacity: 1; translate: calc(-50% + var(--shift, 0px)) 0; transition-delay: 0.15s; }
+  }
+  .chip input:focus-visible ~ .chip__tip,
+  .chip.is-tip .chip__tip { opacity: 1; translate: calc(-50% + var(--shift, 0px)) 0; }
+  /* На тач-устройствах подсказка — по долгому нажатию, без системного меню */
+  .chip--niche { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+  .chip--niche input:checked + span {
+    background: color-mix(in oklab, var(--nc) 16%, transparent);
+    border-color: var(--nc-ink);
+    color: var(--text);
+  }
+
+  .consent { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-2); cursor: pointer; }
+  .consent input { position: absolute; opacity: 0; pointer-events: none; }
+  .consent__box {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: transparent;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .consent input:checked + .consent__box { background: var(--c1); border-color: var(--c1); color: #000; }
+  .consent input:focus-visible + .consent__box { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .consent-missing .consent__box { border-color: #ff6b5e; }
+  .consent-missing .consent__error { display: block; margin-top: -14px; }
+
+  .submit {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 58px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 16px;
+    font-weight: 600;
+    isolation: isolate;
+    transition: box-shadow 0.4s, transform 0.2s;
+  }
+  .submit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+    transform: translateX(-101%);
+    transition: transform 0.6s var(--ease-out);
+  }
+  .submit:hover::before, .submit:focus-visible::before { transform: none; }
+  .submit:hover { box-shadow: 0 16px 40px color-mix(in oklab, var(--c1) 35%, transparent); }
+  .submit:active { transform: scale(0.99); }
+  .submit :global(.submit__icon) { transition: transform 0.4s var(--ease-out); }
+  .submit:hover :global(.submit__icon) { transform: translateX(4px); }
+
+  /* ---------- успех ---------- */
+  .success {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    padding: 60px 12px;
+    text-align: center;
+    animation: rise 0.7s var(--ease-out) both;
+  }
+  .success[hidden] { display: none; }
+  .success__icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--c1);
+    color: #000;
+    box-shadow: 0 0 40px color-mix(in oklab, var(--c1) 50%, transparent);
+  }
+  .success__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: 28px;
+    text-transform: uppercase;
+  }
+  .success__text { color: var(--text-2); }
+  .success__again {
+    margin-top: 10px;
+    padding: 10px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .success__again:hover { color: var(--text); border-color: var(--line-hover); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+  @media (max-width: 960px) {
+    .contact__inner { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .form__grid { grid-template-columns: 1fr; }
+  }
+</style>

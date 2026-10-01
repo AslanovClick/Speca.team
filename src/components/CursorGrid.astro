@@ -1,0 +1,133 @@
+---
+/**
+ * Сетка за курсором на весь лендинг: линии проявляются только вокруг курсора,
+ * клетки под курсором мягко тонируются цветом ниши и гаснут.
+ * Сетка прокручивается вместе со страницей (координаты страницы),
+ * клетки рисуются на фиксированном canvas размером с окно.
+ */
+---
+<div class="cgrid" aria-hidden="true" data-cgrid>
+  <div class="cgrid__lit"></div>
+</div>
+<canvas class="cgrid__cells" aria-hidden="true" data-cgrid-cells></canvas>
+
+<script>
+  const fine = matchMedia('(pointer: fine)').matches;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const grid = document.querySelector<HTMLElement>('[data-cgrid]')!;
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-cgrid-cells]')!;
+
+  if (fine && !reduced) {
+    const ctx = canvas.getContext('2d')!;
+    const CELL = 64;
+    const cells = new Map<string, { x: number; y: number; a: number }>();
+    let dpr = 1;
+    let raf = 0;
+    let color = '255, 54, 28';
+    let lastColor = 0;
+    let cx = -1;
+    let cy = -1;
+
+    let vw = 0;
+    let vh = 0;
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      vw = document.documentElement.clientWidth;
+      vh = document.documentElement.clientHeight;
+      canvas.style.width = `${vw}px`;
+      canvas.style.height = `${vh}px`;
+      canvas.width = Math.round(vw * dpr);
+      canvas.height = Math.round(vh * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      kick();
+    };
+
+    // Цвет берём у элемента под курсором — у блока контактов он может быть свой
+    const readColor = (now: number) => {
+      if (now - lastColor < 120 || cx < 0) return;
+      lastColor = now;
+      const el = document.elementFromPoint(cx, cy) ?? document.documentElement;
+      const m = getComputedStyle(el).getPropertyValue('--ink').match(/\d+(\.\d+)?/g);
+      if (m) {
+        color = `${m[0]}, ${m[1]}, ${m[2]}`;
+        grid.style.setProperty('--cg', `rgb(${color})`);
+      }
+    };
+
+    const draw = (now: number) => {
+      readColor(now);
+      ctx.clearRect(0, 0, vw, vh);
+      const sy = scrollY;
+      for (const [key, c] of cells) {
+        c.a -= 0.012;
+        if (c.a <= 0) { cells.delete(key); continue; }
+        ctx.fillStyle = `rgba(${color}, ${c.a * 0.035})`;
+        ctx.fillRect(c.x + 1, c.y - sy + 1, CELL - 1, CELL - 1);
+      }
+      raf = cells.size ? requestAnimationFrame(draw) : 0;
+    };
+    function kick() { if (!raf) raf = requestAnimationFrame(draw); }
+
+    const track = () => {
+      grid.style.setProperty('--mx', `${cx}px`);
+      grid.style.setProperty('--my', `${cy + scrollY}px`);
+    };
+
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      cx = e.clientX;
+      cy = e.clientY;
+      // Над «спокойными» зонами (например, контакты) эффект не показываем
+      if ((e.target as Element | null)?.closest?.('[data-cursor-calm]')) {
+        grid.classList.remove('is-active');
+        return;
+      }
+      track();
+      grid.classList.add('is-active');
+      const px = Math.floor(cx / CELL) * CELL;
+      const py = Math.floor((cy + scrollY) / CELL) * CELL;
+      const key = `${px}:${py}`;
+      const cell = cells.get(key);
+      if (cell) cell.a = Math.min(1, cell.a + 0.08);
+      else cells.set(key, { x: px, y: py, a: 0.5 });
+      kick();
+    }, { passive: true });
+    window.addEventListener('scroll', () => { if (cx >= 0) track(); kick(); }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => grid.classList.remove('is-active'));
+    window.addEventListener('resize', resize);
+    resize();
+  }
+</script>
+
+<style>
+  .cgrid {
+    --cell: 64px;
+    --mx: -999px;
+    --my: -999px;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .cgrid__lit {
+    position: absolute;
+    inset: 0;
+    background-size: var(--cell) var(--cell);
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--cg, var(--ink)) 40%, var(--line-strong)) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--cg, var(--ink)) 40%, var(--line-strong)) 1px, transparent 1px);
+    mask-image: radial-gradient(circle 220px at var(--mx) var(--my), #000 0%, transparent 75%);
+    -webkit-mask-image: radial-gradient(circle 220px at var(--mx) var(--my), #000 0%, transparent 75%);
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+  .is-active .cgrid__lit { opacity: 0.22; }
+  .cgrid__cells {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+</style>

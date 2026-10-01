@@ -1,0 +1,39 @@
+---
+/**
+ * Иконка Speca (срезанный квадрат с «пламенем»).
+ * Цвета берутся из --c1 / --c2: по умолчанию — текущая ниша страницы,
+ * для статичной иконки ниши передайте c1/c2.
+ */
+interface Props {
+  c1?: string;
+  c2?: string;
+  class?: string;
+  title?: string;
+}
+const { c1, c2, class: cls, title } = Astro.props;
+const gid = `sm-${Math.random().toString(36).slice(2, 9)}`;
+const style = c1 && c2 ? `--c1:${c1};--c2:${c2}` : undefined;
+---
+<svg
+  class:list={['speca-mark', cls]}
+  viewBox="0 0 133.626 133.626"
+  style={style}
+  role={title ? 'img' : undefined}
+  aria-hidden={title ? undefined : 'true'}
+  aria-label={title}
+>
+  <defs>
+    <linearGradient id={gid} x1="30" y1="0" x2="106" y2="133.6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" style="stop-color: var(--c1)" />
+      <stop offset="1" style="stop-color: var(--c2)" />
+    </linearGradient>
+  </defs>
+  <path d="M133.626 104.756L104.756 133.626H0V29.1446L29.1446 0H133.626V104.756Z" fill={`url(#${gid})`} />
+  <path d="M115.862 47.4634L96.5519 67.5862V42.6515L115.862 22.5287V47.4634Z" fill="#000" />
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    fill="#000"
+    d="M85.8038 77.6548L95.8928 67.4588V86.8777L107.816 75.136V100.877L84.4284 123.908H42.6981L19.3104 100.877V75.136L85.8038 9.65517V77.6548ZM32.3797 88.0063L63.5632 118.715L78.4668 104.038V85.5232L69.2955 94.5549V51.6527L32.3797 88.0063Z"
+  />
+</svg>

@@ -1,0 +1,272 @@
+---
+import NicheLogo from './NicheLogo.astro';
+import Icon from './Icon.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).niches;
+const COLS = 3;
+const chars = Array.from(t.big);
+const mid = (chars.length - 1) / 2;
+---
+<section class="section niches" id="niches" data-niches>
+  <div class="container">
+    <h2 class="niches__big" aria-label={t.big} data-big>
+      {chars.map((ch, i) => (
+        <span class="niches__char" aria-hidden="true" style={`--dist:${Math.abs(i - mid) / Math.max(mid, 1)}`}>
+          {ch === ' ' ? ' ' : ch}
+        </span>
+      ))}
+    </h2>
+    <p class="lead niches__lead" data-inview>{t.lead}</p>
+
+    <div class="niches__grid" data-grid>
+      {niches.map((n, i) => {
+        const live = n.status === 'live';
+        const Tag = live ? 'a' : 'div';
+        return (
+          <Tag
+            class:list={['ncard', { 'is-live': live }]}
+            data-col={i % COLS}
+            style={`--c1:${n.c1};--c2:${n.c2};--c1-l:${n.ink}`}
+            {...(live ? { href: n.url, target: '_blank', rel: 'noopener', 'aria-label': `${t.open} ${n.domain}` } : {})}
+          >
+            <span class="ncard__inner">
+              <svg class="ncard__union" viewBox="0 0 1092 1410" preserveAspectRatio="none" aria-hidden="true">
+                <path fill-rule="evenodd" d="M820.409 839.187L944.889 713.358V953.007L1092 808.102V1125.77L803.438 1410H288.562L0 1125.77V808.102L820.409 0V839.187ZM161.251 966.935L546 1345.91L729.883 1164.79V936.291L616.725 1047.75V518.293L161.251 966.935Z" />
+              </svg>
+              <span class="ncard__tag">
+                <span class="ncard__dot"></span>{t.labels[n.id]}
+              </span>
+              <span class="ncard__arrow"><Icon name="arrow-up-right" size={16} /></span>
+              {!live && <span class="visually-hidden">— {t.soonLabel}</span>}
+              <NicheLogo niche={n} class="ncard__logo" />
+            </span>
+          </Tag>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<script>
+  /*
+   * Staggered grid: колонки поднимаются снизу по мере прокрутки,
+   * центральная — первой, крайние — с задержкой. Буквы большого заголовка
+   * вылетают от центра к краям. Значения сглаживаются (как scrub в GSAP).
+   */
+  const section = document.querySelector<HTMLElement>('[data-niches]');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (section && !reduced) {
+    const grid = section.querySelector<HTMLElement>('[data-grid]')!;
+    const big = section.querySelector<HTMLElement>('[data-big]')!;
+    const cards = [...grid.querySelectorAll<HTMLElement>('.ncard')];
+    const chars = [...big.querySelectorAll<HTMLElement>('.niches__char')];
+
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+    const ease = (v: number) => Math.sin((v * Math.PI) / 2); // sine.out
+
+    let current = { grid: 0, text: 0 };
+    let target = { grid: 0, text: 0 };
+    // На планшете/телефоне колонок 1–2: каждая карточка появляется сама по себе,
+    // когда входит в экран, с коротким сдвигом — без задержек по колонкам и наложений
+    const narrowMq = matchMedia('(max-width: 900px)');
+    const cardTarget = cards.map(() => 0);
+    const cardCur = cards.map(() => 0);
+    let raf = 0;
+    let active = false;
+
+    const measure = () => {
+      const vh = window.innerHeight;
+      const g = grid.getBoundingClientRect();
+      const b = big.getBoundingClientRect();
+      // grid: от «верх у низа экрана» до «центр в центре»
+      target.grid = clamp((vh - g.top) / (vh / 2 + g.height / 2));
+      // текст: от «верх у низа экрана» до «центр на 25% выше центра»
+      target.text = clamp((vh - b.top) / (vh * 0.45));
+      if (narrowMq.matches) {
+        cards.forEach((card, i) => {
+          const top = g.top + card.offsetTop - grid.offsetTop; // позиция без учёта transform
+          cardTarget[i] = clamp((vh - top) / (vh * 0.3));
+        });
+      }
+    };
+
+    const dist = chars.map((ch) => parseFloat(ch.style.getPropertyValue('--dist')) || 0);
+    const cols = Math.max(...cards.map((c) => +c.dataset.col!)) + 1;
+    const midCol = (cols - 1) / 2;
+
+    const render = () => {
+      if (narrowMq.matches) {
+        cards.forEach((card, i) => {
+          const p = ease(cardCur[i]);
+          card.style.setProperty('--y', `${(1 - p) * 24}px`);
+          card.style.setProperty('--o', String(p));
+        });
+      } else cards.forEach((card) => {
+        const delay = (Math.abs(+card.dataset.col! - midCol) / Math.max(midCol, 1)) * 0.3;
+        const p = ease(clamp((current.grid - delay) / (1 - delay)));
+        card.style.setProperty('--y', `${(1 - p) * 140}%`);
+        card.style.setProperty('--o', String(p));
+      });
+      chars.forEach((ch, i) => {
+        const delay = dist[i] * 0.3;
+        const p = ease(clamp((current.text - delay) / (1 - delay)));
+        ch.style.setProperty('--y', `${(1 - p) * 110}%`);
+        ch.style.setProperty('--o', String(p));
+      });
+    };
+
+    const loop = () => {
+      measure();
+      current.grid += (target.grid - current.grid) * 0.09;
+      current.text += (target.text - current.text) * 0.16;
+      let cardsSettled = true;
+      if (narrowMq.matches) {
+        cards.forEach((_, i) => {
+          cardCur[i] += (cardTarget[i] - cardCur[i]) * 0.18;
+          if (Math.abs(cardTarget[i] - cardCur[i]) > 0.0005) cardsSettled = false;
+        });
+      }
+      render();
+      const settled = cardsSettled && Math.abs(target.grid - current.grid) < 0.0005 && Math.abs(target.text - current.text) < 0.0005;
+      raf = active && !settled ? requestAnimationFrame(loop) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+
+    section.classList.add('is-scrubbed');
+    measure();
+    current = { ...target };
+    cardTarget.forEach((v, i) => (cardCur[i] = v));
+    render();
+    narrowMq.addEventListener('change', () => { measure(); cardTarget.forEach((v, i) => (cardCur[i] = v)); render(); kick(); });
+
+    new IntersectionObserver(([e]) => {
+      active = e.isIntersecting;
+      if (active) kick();
+    }, { rootMargin: '20% 0px' }).observe(section);
+    window.addEventListener('scroll', () => active && kick(), { passive: true });
+    window.addEventListener('resize', kick);
+  }
+</script>
+
+<style>
+  .niches { overflow: hidden; }
+  .niches__big {
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-stretch: 80%;
+    font-size: clamp(56px, 13vw, 200px);
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .niches__char { display: inline-block; will-change: transform; }
+  .is-scrubbed .niches__char {
+    transform: translateY(var(--y, 0));
+    opacity: var(--o, 1);
+  }
+  .niches__lead { margin: 24px auto 0; text-align: center; }
+
+  .niches__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: clamp(48px, 6vw, 80px);
+  }
+
+  /* ---------- карточка ниши ---------- */
+  .ncard {
+    display: block;
+    will-change: transform, opacity;
+  }
+  .is-scrubbed .ncard {
+    transform: translateY(var(--y, 0));
+    opacity: var(--o, 1);
+  }
+  .ncard__inner {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 2.1 / 1;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elev);
+    color: var(--text);
+    transition:
+      background-color 0.5s var(--ease-out),
+      color 0.5s var(--ease-out),
+      border-color 0.5s,
+      transform 0.5s var(--ease-out),
+      box-shadow 0.5s;
+  }
+  .ncard__union {
+    position: absolute;
+    left: 0;
+    top: -65%;
+    width: 100%;
+    height: 215%;
+    fill: var(--watermark);
+    transition: fill 0.5s;
+  }
+  .ncard :global(.ncard__logo) { position: relative; width: 56%; }
+
+  .ncard__tag {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: color 0.5s, border-color 0.5s;
+  }
+  .ncard__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 8px color-mix(in oklab, var(--ink) 60%, transparent); }
+  .ncard__arrow {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    transition: color 0.5s, border-color 0.5s, transform 0.5s var(--ease-out);
+  }
+
+  /* Наведение: фон тёмный → светлый, логотип переключается на тёмную надпись */
+  .ncard:hover .ncard__inner,
+  .ncard:focus-visible .ncard__inner {
+    background: var(--inverse-bg);
+    color: var(--inverse-text);
+    border-color: transparent;
+    transform: scale(1.03);
+    box-shadow: 0 24px 60px var(--shadow), 0 0 0 1px color-mix(in oklab, var(--ink) 50%, transparent);
+  }
+  .ncard:hover .ncard__union { fill: var(--inverse-watermark); }
+  .ncard:hover .ncard__tag { color: var(--inverse-muted); border-color: var(--inverse-line); }
+  .ncard:hover .ncard__arrow { color: var(--inverse-text); border-color: var(--inverse-line); transform: rotate(45deg); }
+  .ncard:focus-visible { outline: none; }
+
+  @media (max-width: 900px) {
+    .niches__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  }
+  @media (max-width: 560px) {
+    .niches__grid { grid-template-columns: 1fr; }
+    .ncard__tag { left: 12px; top: 12px; }
+  }
+</style>

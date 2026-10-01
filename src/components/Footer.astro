@@ -1,0 +1,135 @@
+---
+import SpecaLogo from './SpecaLogo.astro';
+import Icon from './Icon.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const dict = useDict(Astro.currentLocale);
+const t = dict.footer;
+const links = [
+  { href: '#partnership', label: dict.nav.partnership },
+  { href: '#niches', label: dict.nav.niches },
+  { href: '#how', label: dict.nav.how },
+  { href: '#contact', label: dict.nav.contact },
+];
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="#top" class="footer__logo" aria-label="Speca"><SpecaLogo class="footer__logo-svg" /></a>
+        <p class="footer__tagline">{t.tagline}</p>
+      </div>
+
+      <nav class="footer__col" aria-label={t.nav}>
+        <p class="footer__title">{t.nav}</p>
+        <ul>{links.map((l) => <li><a class="footer__link" href={l.href}>{l.label}</a></li>)}</ul>
+      </nav>
+
+      <div class="footer__col">
+        <p class="footer__title">{t.niches}</p>
+        <ul class="footer__niches">
+          {niches.map((n) => (
+            <li style={`--nc:${n.c1}`}>
+              {n.status === 'live'
+                ? <a class="footer__link" href={n.url} target="_blank" rel="noopener"><i></i>{n.domain}</a>
+                : <span class="footer__muted"><i></i>{n.domain}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="footer__col">
+        <p class="footer__title">{t.contacts}</p>
+        <ul>{dict.contact.channels.map((c) => <li><a class="footer__link" href={c.href}>{c.value}</a></li>)}</ul>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <p>© {year} Speca. {t.rights}</p>
+      <a href="#top" class="footer__up">
+        {t.top}
+        <span class="footer__up-icon"><Icon name="arrow-up" size={16} /></span>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding: clamp(56px, 7vw, 88px) 0 28px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .footer__top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1.3fr 1fr;
+    gap: 40px;
+  }
+  .footer__logo { display: inline-block; color: var(--text); }
+  .footer :global(.footer__logo-svg) { height: 28px; width: auto; aspect-ratio: 684 / 134; }
+  .footer__tagline { max-width: 26em; margin-top: 18px; color: var(--text-2); line-height: 1.6; }
+
+  .footer__title {
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .footer__col ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .footer__niches { grid-template-columns: repeat(2, max-content); column-gap: 24px !important; }
+  .footer__link, .footer__muted { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
+  .footer__muted { color: var(--text-3); }
+  .footer__link { position: relative; transition: color 0.25s; }
+  .footer__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .footer__link:hover { color: var(--text); }
+  .footer__link:hover::after { transform: scaleX(1); }
+  .footer__niches i { width: 6px; height: 6px; border-radius: 50%; background: var(--nc); }
+  .footer__muted i { opacity: 0.45; }
+
+  .footer__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  .footer__up { display: inline-flex; align-items: center; gap: 10px; color: var(--text-2); transition: color 0.25s; }
+  .footer__up-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    transition: transform 0.4s var(--ease-out), border-color 0.25s;
+  }
+  .footer__up:hover { color: var(--text); }
+  .footer__up:hover .footer__up-icon { transform: translateY(-3px); border-color: var(--line-hover); }
+
+  @media (max-width: 900px) {
+    .footer__top { grid-template-columns: 1fr 1fr; }
+    .footer__brand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .footer__top { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,305 @@
+---
+import Icon from './Icon.astro';
+import RollText from './RollText.astro';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).partnership;
+// Цвета «подложки» папок — сочетания цветов ниш
+const gradients = [
+  ['#1CFE82', '#00C4FF'],
+  ['#FF361C', '#FFC800'],
+  ['#BB00FF', '#00C4FF'],
+];
+const kinds = ['feed', 'link', 'ad'] as const;
+---
+<section class="section partnership" id="partnership">
+  <div class="container">
+    <header class="section-head">
+      <h2 class="h2" data-inview>{t.title}</h2>
+      <p class="lead" data-inview style="--d:1">{t.lead}</p>
+    </header>
+
+    <div class="folders">
+      {t.cards.map((card, i) => (
+        <article
+          class="folder roll-host"
+          data-inview
+          style={`--d:${i + 1};--g1:${gradients[i][0]};--g2:${gradients[i][1]}`}
+        >
+          <div class="folder__back" aria-hidden="true"></div>
+
+          <div class="folder__object" aria-hidden="true">
+            {kinds[i] === 'feed' && (
+              <div class="obj obj--feed">
+                {t.object.feed.map((name, k) => (
+                  <div class="obj__row" style={`--k:${k}`}>
+                    <span class="obj__thumb"></span>
+                    <span class="obj__name">{name}</span>
+                    <span class="obj__price"></span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {kinds[i] === 'link' && (
+              <div class="obj obj--link">
+                <div class="obj__route">
+                  <span class="obj__pill">{t.object.linkFrom}</span>
+                  <Icon name="arrow-right" size={16} />
+                  <span class="obj__pill obj__pill--dark">{t.object.linkTo}</span>
+                </div>
+                <div class="obj__note">
+                  <Icon name="link" size={14} />
+                  {t.object.linkNote}
+                  <span class="obj__plus">+1</span>
+                </div>
+                <Icon name="cursor" size={22} class="obj__cursor" stroke={1.6} />
+              </div>
+            )}
+            {kinds[i] === 'ad' && (
+              <div class="obj obj--ad">
+                <div class="obj__banner"><span class="obj__badge">{t.object.adBadge}</span></div>
+                <strong class="obj__title">{t.object.adTitle}</strong>
+                <span class="obj__sub">{t.object.adText}</span>
+              </div>
+            )}
+          </div>
+
+          <div class="folder__front">
+            <div class="folder__top">
+              <span class="folder__num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="folder__arrow"><Icon name="arrow-up-right" size={18} /></span>
+            </div>
+            <h3 class="folder__title"><RollText text={card.title} /></h3>
+            <p class="folder__text">{card.text}</p>
+            <ul class="folder__tags">
+              {card.tags.map((tag) => <li>{tag}</li>)}
+            </ul>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .folders {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .folder {
+    --shift: 44px;
+    position: relative;
+    height: 540px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* В светлой теме белая папка на светлом фоне — добавляем контур и мягкую тень */
+  :global([data-theme='light']) .folder {
+    box-shadow: 0 0 0 1px var(--line), 0 24px 48px -28px var(--shadow);
+  }
+
+  /* Цветная подложка «за папкой» */
+  .folder__back {
+    position: absolute;
+    inset: 0 0 45% 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: linear-gradient(155deg, var(--g1), var(--g2));
+  }
+  .folder__back::before {
+    content: '';
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(from 0deg, rgb(255 255 255 / 0.35), transparent 25%, rgb(255 255 255 / 0.18) 50%, transparent 75%, rgb(255 255 255 / 0.35));
+    mix-blend-mode: soft-light;
+    transition: transform 1.4s var(--ease-out);
+  }
+  .folder__back::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--folder-veil-from), var(--folder-veil-to));
+    transition: opacity 0.7s var(--ease-out);
+  }
+
+  /* Объект, выезжающий из-за папки */
+  .folder__object {
+    position: absolute;
+    left: 50%;
+    top: 7%;
+    z-index: 1;
+    width: min(76%, 290px);
+    translate: -50% 0;
+    transform: translateY(34%) rotate(-3deg);
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  /* Лицевая сторона папки с язычком.
+     Язычок: скругление сверху-справа радиусом --r, затем вогнутый переход тем же радиусом —
+     получается плавная S-образная линия. Высота язычка = 2 × --r. */
+  .folder__front {
+    --r: 12px;
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    z-index: 2;
+    height: 64%;
+    display: flex;
+    flex-direction: column;
+    padding: 26px 27px calc(27px + var(--shift));
+    background: var(--bg-elev);
+    border-radius: 0 var(--radius-lg) 0 0;
+    transition: transform 0.8s var(--ease-out);
+  }
+  .folder__front::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: calc(100% - 1px);
+    width: 44%;
+    height: calc(var(--r) * 2 + 1px);
+    background: inherit;
+    border-radius: var(--radius-lg) var(--r) 0 0;
+  }
+  .folder__front::after {
+    content: '';
+    position: absolute;
+    left: calc(44% - 0.5px);
+    bottom: calc(100% - 1px);
+    width: var(--r);
+    height: calc(var(--r) + 1px);
+    background: radial-gradient(circle at 100% 0, transparent calc(var(--r) - 0.5px), var(--bg-elev) var(--r));
+  }
+
+  .folder__top { display: flex; justify-content: space-between; align-items: center; }
+  .folder__num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: 44px;
+    line-height: 1;
+  }
+  .folder__arrow {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    transition: background-color 0.4s, color 0.4s, border-color 0.4s, transform 0.5s var(--ease-out);
+  }
+  .folder__title {
+    margin-top: 40px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: 24px;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .folder__text { margin-top: 12px; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  .folder__tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 0; padding: 0; list-style: none; }
+  .folder__tags li {
+    padding: 5px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+
+  /* ---------- наведение ---------- */
+  .folder:hover .folder__front { transform: translateY(var(--shift)); }
+  .folder:hover .folder__object { transform: translateY(-6%) rotate(0deg); }
+  .folder:hover .folder__back::before { transform: rotate(120deg); }
+  .folder:hover .folder__back::after { opacity: 0.25; }
+  .folder:hover .folder__arrow {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+    transform: rotate(45deg);
+  }
+
+  /* ---------- объекты ---------- */
+  .obj {
+    position: relative;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgb(255 255 255 / 0.94);
+    color: #0b0b0d;
+    box-shadow: 0 24px 50px var(--shadow);
+    font-size: 12px;
+  }
+  .obj--feed { display: grid; gap: 8px; }
+  .obj__row {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    background: rgb(0 0 0 / 0.04);
+  }
+  .obj__thumb { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+  .obj__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obj__price { width: 44px; height: 8px; border-radius: 4px; background: rgb(0 0 0 / 0.14); }
+
+  .obj--link { display: grid; gap: 12px; padding: 18px 16px; }
+  .obj__route { display: flex; align-items: center; gap: 8px; }
+  .obj__pill {
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    background: rgb(0 0 0 / 0.06);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .obj__pill--dark { background: #0b0b0d; color: #fff; }
+  .obj__note { display: flex; align-items: center; gap: 6px; color: #55555e; font-weight: 500; }
+  .obj__plus {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    color: #000;
+    font-weight: 700;
+  }
+  .obj :global(.obj__cursor) { position: absolute; right: 22%; top: 38%; color: #0b0b0d; fill: #fff; }
+
+  .obj--ad { display: grid; gap: 4px; }
+  .obj__banner {
+    position: relative;
+    height: 92px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background:
+      radial-gradient(60% 80% at 20% 20%, rgb(255 255 255 / 0.5), transparent 60%),
+      linear-gradient(135deg, var(--g1), var(--g2));
+  }
+  .obj__badge {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: #0b0b0d;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .obj__title { font-size: 15px; }
+  .obj__sub { color: #55555e; }
+
+  /* ---------- адаптив ---------- */
+  @media (hover: none) {
+    .folder__object { transform: translateY(14%) rotate(-2deg); }
+  }
+  @media (max-width: 1000px) {
+    .folders { grid-template-columns: 1fr; max-width: 520px; margin-inline: auto; }
+    .folder { height: 500px; }
+  }
+</style>
