@@ -25,6 +25,8 @@
 @property --c1 { syntax: '<color>'; inherits: true; initial-value: #FF361C; }
 @property --c2 { syntax: '<color>'; inherits: true; initial-value: #DF2F18; }
 @property --c1-l { syntax: '<color>'; inherits: true; initial-value: #E8290B; }
+/* Угол бегущего блика по контуру (блок «Хто ми») */
+@property --facts-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
 :root {
   color-scheme: dark;
