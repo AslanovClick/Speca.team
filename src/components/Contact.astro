@@ -8,6 +8,8 @@ const t = dict.contact;
 const hints = dict.niches.hints;
 const f = t.form;
 const channelIcons: IconName[] = ['mail', 'telegram', 'phone'];
+// Ключи форматов (порядок как в словаре) — по ним ссылается блок вакансий
+const formatKeys = ['shop', 'referral', 'placement', 'vacancy', 'other'];
 ---
 <section class="section contact" id="contact" data-contact>
   <div class="contact__bg" aria-hidden="true">
@@ -69,7 +71,7 @@ const channelIcons: IconName[] = ['mail', 'telegram', 'phone'];
           <div class="chips">
             {f.formats.map((fmt, i) => (
               <label class="chip">
-                <input type="radio" name="format" value={fmt} checked={i === 0} />
+                <input type="radio" name="format" value={fmt} checked={i === 0} data-format={formatKeys[i]} />
                 <span>{fmt}</span>
               </label>
             ))}

@@ -1,0 +1,200 @@
+---
+import Icon from './Icon.astro';
+import RollText from './RollText.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).team;
+// Каждому участнику — цвета одной из ниш (пока нет фото)
+const palette = [niches[0], niches[1], niches[3], niches[4], niches[5], niches[6]]; // bike, ski, run, foto, tools, camp
+---
+<section class="section section--tight team" id="team">
+  <div class="container">
+    <header class="section-head">
+      <h2 class="h2" data-inview>{t.title}</h2>
+      <p class="lead" data-inview style="--d:1">{t.lead}</p>
+    </header>
+
+    <ul class="team__grid" data-team-track>
+      {t.members.map((m, i) => {
+        const n = palette[i % palette.length];
+        return (
+          <li class="tcard roll-host" data-inview style={`--d:${(i % 3) + 1};--c1:${n.c1};--c2:${n.c2};--c1-l:${n.ink}`}>
+            <!-- Заглушка вместо фото: градиент ниши со знаком Speca -->
+            <div class="tcard__photo" aria-hidden="true">
+              <svg class="tcard__glyph" viewBox="18 8 92 118">
+                <path d="M115.862 47.4634L96.5519 67.5862V42.6515L115.862 22.5287V47.4634Z" />
+                <path fill-rule="evenodd" d="M85.8038 77.6548L95.8928 67.4588V86.8777L107.816 75.136V100.877L84.4284 123.908H42.6981L19.3104 100.877V75.136L85.8038 9.65517V77.6548ZM32.3797 88.0063L63.5632 118.715L78.4668 104.038V85.5232L69.2955 94.5549V51.6527L32.3797 88.0063Z" />
+              </svg>
+            </div>
+            <div class="tcard__body">
+              <h3 class="tcard__name"><RollText text={m.name} /></h3>
+              <p class="tcard__role">{m.role}</p>
+              <p class="tcard__note">{m.note}</p>
+              <div class="tcard__social">
+                <a class="tcard__link" href="#" aria-label={`LinkedIn — ${m.name}`}><Icon name="linkedin" size={16} /></a>
+                <a class="tcard__link" href="#" aria-label={`Telegram — ${m.name}`}><Icon name="telegram" size={16} /></a>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+
+    </ul>
+    <!-- Точки слайдера (только на телефоне) -->
+    <div class="team__dots" data-team-dots>
+      {t.members.map((m, i) => (
+        <button class:list={['team__dot', { 'is-active': i === 0 }]} type="button" aria-label={`${i + 1} / ${t.members.length}: ${m.name}`}></button>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  // На телефоне сетка становится горизонтальным слайдером (scroll-snap); точки показывают позицию
+  const track = document.querySelector<HTMLElement>('[data-team-track]');
+  const dots = [...document.querySelectorAll<HTMLButtonElement>('[data-team-dots] .team__dot')];
+  if (track && dots.length) {
+    const cards = [...track.children] as HTMLElement[];
+    const step = () => (cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : track.clientWidth);
+    let raf = 0;
+    const sync = () => {
+      raf = 0;
+      const i = Math.min(cards.length - 1, Math.max(0, Math.round(track.scrollLeft / step())));
+      dots.forEach((d, k) => d.classList.toggle('is-active', k === i));
+    };
+    track.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(sync); }, { passive: true });
+    dots.forEach((d, k) =>
+      d.addEventListener('click', () => track.scrollTo({ left: k * step(), behavior: 'smooth' })),
+    );
+  }
+</script>
+
+<style>
+  .team__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tcard {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elev);
+    transition: border-color 0.4s, box-shadow 0.5s var(--ease-out), translate 0.5s var(--ease-out);
+  }
+  .tcard:hover {
+    translate: 0 -4px;
+    border-color: color-mix(in oklab, var(--ink) 40%, var(--line));
+    box-shadow: 0 24px 50px -24px var(--shadow);
+  }
+
+  /* ---------- «фото» ---------- */
+  .tcard__photo {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 11;
+    overflow: hidden;
+    border-radius: 12px;
+    background:
+      radial-gradient(70% 60% at 30% 20%, rgb(255 255 255 / 0.35), transparent 60%),
+      linear-gradient(150deg, var(--c1), var(--c2));
+    filter: saturate(0.12) brightness(0.72);
+    transition: filter 0.6s var(--ease-out);
+  }
+  :global([data-theme='light']) .tcard__photo { filter: saturate(0.12) brightness(1.05); }
+  .tcard__photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgb(0 0 0 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .tcard__glyph {
+    position: relative;
+    z-index: 1;
+    width: 30%;
+    fill: rgb(0 0 0 / 0.82);
+    transition: transform 0.7s var(--ease-out);
+  }
+  .tcard:hover .tcard__photo { filter: none; }
+  .tcard:hover .tcard__glyph { transform: scale(1.08) rotate(-4deg); }
+
+  /* ---------- текст ---------- */
+  .tcard__body { position: relative; padding: 18px 12px 10px; }
+  .tcard__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: 22px;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .tcard__role { margin-top: 6px; font-size: 15px; font-weight: 500; color: var(--text); }
+  .tcard__note { margin-top: 4px; font-size: 14px; color: var(--text-3); }
+  .tcard__social { position: absolute; right: 12px; top: 18px; display: flex; gap: 6px; }
+  .tcard__link {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text-3);
+    transition: color 0.25s, border-color 0.25s, background-color 0.25s;
+  }
+  .tcard__link:hover { color: #000; background: var(--c1); border-color: var(--c1); }
+
+  @media (max-width: 900px) {
+    .team__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* узкие карточки: соцсети под текстом, чтобы не налезали на длинные имена */
+    .tcard__social { position: static; margin-top: 14px; }
+  }
+  .team__dots { display: none; }
+
+  /* Телефон: горизонтальный слайдер с привязкой к карточкам */
+  @media (max-width: 560px) {
+    .team__grid {
+      display: flex;
+      gap: 12px;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--gutter);
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+    }
+    .team__grid::-webkit-scrollbar { display: none; }
+    .tcard {
+      flex: 0 0 82%;
+      scroll-snap-align: start;
+    }
+    .tcard:hover { translate: none; }
+    /* карточки за краем экрана не попадают в IntersectionObserver — показываем сразу */
+    :global(.js) .team__grid .tcard[data-inview] { opacity: 1; transform: none; }
+    .team__dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 18px;
+    }
+    .team__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--line-strong);
+      transition: width 0.4s var(--ease-out), background-color 0.3s;
+    }
+    .team__dot.is-active { width: 24px; background: var(--ink); }
+  }
+</style>

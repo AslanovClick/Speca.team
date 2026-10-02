@@ -212,6 +212,9 @@ h1, h2, h3, p { margin: 0; }
   position: relative;
   padding-block: clamp(88px, 11vw, 160px);
 }
+/* Секции, продолжающие предыдущую тему (Хто ми → Цінності → Команда), — с меньшим отступом сверху */
+.section--tight { padding-top: clamp(24px, 3vw, 48px); }
+
 .section-head {
   display: flex;
   flex-direction: column;

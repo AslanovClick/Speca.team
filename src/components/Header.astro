@@ -7,6 +7,8 @@ const links = [
   { href: '#partnership', label: t.nav.partnership },
   { href: '#niches', label: t.nav.niches },
   { href: '#how', label: t.nav.how },
+  { href: '#about', label: t.nav.team },
+  { href: '#jobs', label: t.nav.jobs },
   { href: '#contact', label: t.nav.contact },
 ];
 const langs = [
@@ -108,7 +110,7 @@ const langs = [
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 14px;
+    padding: 8px 12px;
     overflow: hidden;
     font-size: 14px;
     font-weight: 500;
@@ -256,13 +258,13 @@ const langs = [
     color: var(--text);
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 1100px) {
     .nav { display: none; }
     .nav + .tools { margin-left: auto; }
     .brand :global(.brand__logo) { height: 26px; }
     .burger { display: grid; }
   }
-  @media (min-width: 961px) {
+  @media (min-width: 1101px) {
     .mobile-nav { display: none; }
   }
 </style>
@@ -293,7 +295,7 @@ const langs = [
     if ((e.target as HTMLElement).closest('a')) setOpen(false);
   });
   window.addEventListener('keydown', (e) => e.key === 'Escape' && setOpen(false));
-  matchMedia('(min-width: 961px)').addEventListener('change', (e) => e.matches && setOpen(false));
+  matchMedia('(min-width: 1101px)').addEventListener('change', (e) => e.matches && setOpen(false));
 
   /* ---------- языки (пока только визуально) ---------- */
   const lang = header.querySelector<HTMLElement>('[data-lang]')!;

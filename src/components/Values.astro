@@ -1,0 +1,204 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+import { niches } from '../data/niches';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).values;
+const icons: IconName[] = ['target', 'layers', 'eye', 'bolt', 'heart'];
+const colors = [niches[0], niches[1], niches[3], niches[5], niches[4]]; // bike, ski, run, tools, foto
+---
+<section class="section section--tight values" id="values">
+  <div class="container">
+    <header class="section-head values__head">
+      <h2 class="h2" data-inview>{t.title}</h2>
+    </header>
+    <p class="lead values__mission" data-inview style="--d:1">{t.mission}</p>
+
+    <!-- Expanded cards: узкие «полосы», наведённая раскрывается в полную карточку -->
+    <div class="rail" data-rail>
+      {t.items.map((item, i) => (
+        <article
+          class:list={['vcard', { 'is-active': i === 0 }]}
+          data-vcard
+          tabindex="0"
+          aria-expanded={i === 0 ? 'true' : 'false'}
+          data-inview
+          style={`--d:${i + 1};--c1:${colors[i].c1};--c2:${colors[i].c2}`}
+        >
+          <div class="vcard__bg" aria-hidden="true">
+            <img class="vcard__img" src={item.image} alt="" width="1440" height="960" loading="lazy" decoding="async" />
+          </div>
+          <span class="vcard__num">{String(i + 1).padStart(2, '0')}</span>
+          <span class="vcard__sliver" aria-hidden="true">{item.title}</span>
+          <!-- Подпись сверстана сразу под ширину раскрытой карточки, поэтому текст не перестраивается -->
+          <div class="vcard__open">
+            <span class="vcard__icon"><Icon name={icons[i]} size={24} /></span>
+            <h3 class="vcard__title">{item.title}</h3>
+            <p class="vcard__text">{item.text}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  const rail = document.querySelector<HTMLElement>('[data-rail]');
+  if (rail) {
+    const cards = [...rail.querySelectorAll<HTMLElement>('[data-vcard]')];
+    const activate = (card: HTMLElement) => {
+      cards.forEach((c) => {
+        const on = c === card;
+        c.classList.toggle('is-active', on);
+        c.setAttribute('aria-expanded', String(on));
+      });
+    };
+    cards.forEach((card) => {
+      card.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') activate(card); });
+      card.addEventListener('focus', () => activate(card));
+      card.addEventListener('click', () => activate(card));
+    });
+  }
+</script>
+
+<style>
+  .values__head { margin-bottom: 20px; }
+  .values__mission { margin-bottom: clamp(36px, 5vw, 56px); }
+
+  .rail {
+    display: flex;
+    gap: 12px;
+    height: clamp(380px, 34vw, 460px);
+  }
+
+  .vcard {
+    --open-w: 440px;
+    position: relative;
+    flex: 1 1 0;
+    min-width: 76px;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: flex-grow 0.75s var(--ease-out);
+  }
+  .vcard.is-active { flex-grow: 5.2; cursor: default; }
+  .vcard:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+
+  .vcard__bg {
+    position: absolute;
+    inset: 0;
+    background: #0b0b0d;
+  }
+  /* Фото: в узкой полосе — приглушено, в раскрытой карточке — в полную силу */
+  .vcard__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(0.85) brightness(0.55);
+    transform: scale(1.06);
+    transition: filter 0.75s var(--ease-out), transform 1.2s var(--ease-out);
+  }
+  .vcard.is-active .vcard__img { filter: none; transform: none; }
+  .vcard:not(.is-active):hover .vcard__img { filter: grayscale(0.4) brightness(0.7); }
+  /* Лёгкое затемнение снизу — чтобы иконка и текст читались на любом фото */
+  .vcard__bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgb(0 0 0 / 0.25) 0%, transparent 22%),
+      linear-gradient(180deg, transparent 40%, rgb(0 0 0 / 0.45) 62%, rgb(0 0 0 / 0.82) 100%);
+  }
+
+  .vcard__num {
+    position: absolute;
+    left: 22px;
+    top: 20px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    opacity: 0.85;
+  }
+
+  /* Вертикальная подпись узкой полосы */
+  .vcard__sliver {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    writing-mode: vertical-rl;
+    transform: translateX(-50%) rotate(180deg);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: 20px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: opacity 0.3s;
+  }
+  .vcard.is-active .vcard__sliver { opacity: 0; }
+
+  .vcard__open {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: var(--open-w);
+    max-width: 100vw;
+    padding: 28px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.3s, transform 0.5s var(--ease-out);
+    pointer-events: none;
+  }
+  .vcard.is-active .vcard__open {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.25s;
+  }
+  .vcard__icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin-bottom: 18px;
+    border-radius: var(--radius);
+    background: rgb(255 255 255 / 0.18);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+  }
+  .vcard__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(24px, 2.4vw, 32px);
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+  .vcard__text { margin-top: 12px; max-width: 30em; font-size: 15px; line-height: 1.6; color: rgb(255 255 255 / 0.85); }
+
+  /* Мобильная версия: карточки списком, все раскрыты */
+  @media (max-width: 760px) {
+    .rail { flex-direction: column; height: auto; }
+    .vcard, .vcard.is-active {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      cursor: default;
+    }
+    .vcard__img { filter: none; transform: none; }
+    .vcard__sliver { display: none; }
+    .vcard__num { position: relative; display: block; left: auto; top: auto; margin-bottom: auto; padding: 22px 24px 0; }
+    .vcard__open {
+      position: relative;
+      width: auto;
+      padding: 18px 24px 26px;
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

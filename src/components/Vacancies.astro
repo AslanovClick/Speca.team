@@ -1,0 +1,251 @@
+---
+import Icon from './Icon.astro';
+import RollText from './RollText.astro';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).jobs;
+---
+<section class="section jobs" id="jobs" data-jobs>
+  <div class="container">
+    <header class="section-head">
+      <h2 class="h2" data-inview>{t.title}</h2>
+      <p class="lead" data-inview style="--d:1">{t.lead}</p>
+    </header>
+
+    <ul class="jobs__list">
+      {t.items.map((job, i) => (
+        <li class="job roll-host" data-job data-inview style={`--d:${i + 1}`}>
+          <button
+            class="job__head"
+            type="button"
+            aria-expanded="false"
+            aria-controls={`job-panel-${i}`}
+            id={`job-head-${i}`}
+            data-job-toggle
+          >
+            <span class="job__num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="job__main">
+              <span class="job__title"><RollText text={job.title} /></span>
+              <span class="job__text">{job.text}</span>
+            </span>
+            <span class="job__tags">{job.tags.map((tag) => <span class="job__tag">{tag}</span>)}</span>
+            <span class="job__toggle" aria-hidden="true"><Icon name="plus" size={20} stroke={1.8} /></span>
+            <span class="job__line" aria-hidden="true"></span>
+          </button>
+
+          <div class="job__panel" id={`job-panel-${i}`} role="region" aria-labelledby={`job-head-${i}`}>
+            <div class="job__clip">
+              <div class="job__content">
+                <div class="job__col">
+                  <p class="job__subtitle">{t.responsibilities}</p>
+                  <ul class="job__points">{job.responsibilities.map((p) => <li>{p}</li>)}</ul>
+                </div>
+                <div class="job__col">
+                  <p class="job__subtitle">{t.requirements}</p>
+                  <ul class="job__points">{job.requirements.map((p) => <li>{p}</li>)}</ul>
+                </div>
+                <div class="job__apply">
+                  <a
+                    class="apply"
+                    href="#contact"
+                    data-apply={t.applyMessage.replace('{title}', job.title)}
+                    tabindex="-1"
+                  >
+                    <span>{t.apply}</span>
+                    <Icon name="arrow-right" size={18} />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <p class="jobs__note" data-inview>
+      {t.noRole} <a href={`mailto:${t.email}`}>{t.email}</a>
+    </p>
+  </div>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>('[data-jobs]')!;
+  const jobs = [...section.querySelectorAll<HTMLElement>('[data-job]')];
+
+  const setOpen = (job: HTMLElement, open: boolean) => {
+    job.classList.toggle('is-open', open);
+    job.querySelector('[data-job-toggle]')!.setAttribute('aria-expanded', String(open));
+    job.querySelector<HTMLElement>('[data-apply]')!.tabIndex = open ? 0 : -1;
+  };
+
+  jobs.forEach((job) => {
+    job.querySelector('[data-job-toggle]')!.addEventListener('click', () => {
+      const open = !job.classList.contains('is-open');
+      jobs.forEach((j) => j !== job && setOpen(j, false)); // открыта одна вакансия за раз
+      setOpen(job, open);
+    });
+  });
+
+  // «Відгукнутися»: к форме, формат «Вакансія», комментарий с названием вакансии
+  section.querySelectorAll<HTMLAnchorElement>('[data-apply]').forEach((link) =>
+    link.addEventListener('click', (e) => {
+      const form = document.querySelector<HTMLFormElement>('[data-form]');
+      if (!form) return;
+      e.preventDefault();
+      const radios = [...form.querySelectorAll<HTMLInputElement>('input[name="format"]')];
+      const vacancy = radios.find((r) => r.dataset.format === 'vacancy');
+      if (vacancy) vacancy.checked = true;
+      const message = form.querySelector<HTMLTextAreaElement>('#f-message');
+      if (message) message.value = link.dataset.apply!;
+      document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.setTimeout(() => form.querySelector<HTMLInputElement>('#f-name')?.focus({ preventScroll: true }), 700);
+    }),
+  );
+</script>
+
+<style>
+  .jobs__list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+
+  .job { border-bottom: 1px solid var(--line); }
+  .job__head {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto 44px;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    padding: 28px 8px;
+    text-align: left;
+    transition: background-color 0.4s;
+  }
+  .job__head:hover { background: var(--tint); }
+  .job__num { align-self: start; padding-top: 6px; font-size: 13px; font-weight: 600; color: var(--text-3); }
+  .job__main { display: grid; gap: 8px; }
+  .job__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+  .job__text { max-width: 40em; font-size: 15px; line-height: 1.55; color: var(--text-2); }
+  .job__tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 340px; }
+  .job__tag {
+    padding: 5px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+  .job__toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  }
+  .job__head:hover .job__toggle { color: var(--text); border-color: var(--line-hover); }
+  .job__toggle :global(svg) { transition: transform 0.5s var(--ease-out); }
+  .job.is-open .job__toggle { background: var(--c1); border-color: var(--c1); color: #000; }
+  .job.is-open .job__toggle :global(svg) { transform: rotate(45deg); }
+
+  /* Градиентная линия снизу, как в меню */
+  .job__line {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 35%, transparent) 30%, var(--ink) 50%, color-mix(in oklab, var(--ink) 35%, transparent) 70%, transparent);
+    transition: width 1s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  .job__head:hover .job__line, .job.is-open .job__line { width: 100%; }
+
+  /* ---------- раскрытие: 0fr → 1fr ---------- */
+  .job__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.55s var(--ease-out);
+  }
+  .job.is-open .job__panel { grid-template-rows: 1fr; }
+  .job__clip { overflow: hidden; min-height: 0; }
+  .job__content {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 32px;
+    padding: 8px 8px 36px 80px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.4s, transform 0.5s var(--ease-out);
+  }
+  .job.is-open .job__content { opacity: 1; transform: none; transition-delay: 0.1s; }
+  .job__subtitle { margin-bottom: 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
+  .job__points { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .job__points li { position: relative; padding-left: 18px; font-size: 15px; line-height: 1.5; color: var(--text-2); }
+  .job__points li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .job__apply { align-self: end; }
+
+  .apply {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    padding: 0 22px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    isolation: isolate;
+    transition: box-shadow 0.4s;
+  }
+  .apply::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+    transform: translateX(-101%);
+    transition: transform 0.6s var(--ease-out);
+  }
+  .apply:hover { color: #000; box-shadow: 0 14px 34px color-mix(in oklab, var(--c1) 35%, transparent); }
+  .apply:hover::before { transform: none; }
+  .apply :global(svg) { transition: transform 0.4s var(--ease-out); }
+  .apply:hover :global(svg) { transform: translateX(4px); }
+
+  .jobs__note { margin-top: 28px; font-size: 15px; color: var(--text-2); }
+  .jobs__note a {
+    color: var(--text);
+    font-weight: 600;
+    background: linear-gradient(var(--ink), var(--ink)) left bottom / 0 1px no-repeat;
+    transition: background-size 0.5s var(--ease-out);
+  }
+  .jobs__note a:hover { background-size: 100% 1px; }
+
+  @media (max-width: 900px) {
+    .job__head { grid-template-columns: minmax(0, 1fr) 44px; gap: 16px; padding: 24px 0; }
+    .job__num { display: none; }
+    .job__tags { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; max-width: none; }
+    .job__toggle { grid-column: 2; grid-row: 1; align-self: start; }
+    .job__content { grid-template-columns: 1fr; gap: 24px; padding: 8px 0 28px; }
+    .job__apply { align-self: start; }
+  }
+</style>

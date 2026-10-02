@@ -1,0 +1,314 @@
+---
+import Icon from './Icon.astro';
+import { useDict } from '../i18n';
+
+const t = useDict(Astro.currentLocale).about;
+const g = t.gallery;
+const start = Math.floor(g.items.length / 2);
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+<section class="section about" id="about">
+  <div class="container">
+    <h2 class="h2 about__title" data-inview>{t.title}</h2>
+  </div>
+  <!-- Текст и цифры — одной строкой и одной высоты -->
+  <div class="container about__intro">
+    <p class="lead about__lead" data-inview style="--d:1">{t.lead}</p>
+    <dl class="facts" data-inview style="--d:2">
+      {t.facts.map((f, i) => (
+        <div class="facts__item">
+          <dt class="facts__value">{f.value}</dt>
+          <dd class="facts__label">{f.label}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+
+  <!--
+    Depth carousel: карточки по мере удаления разворачиваются ребром,
+    сжимаются в «пластины» и уходят в матовое стекло. Чистый CSS 3D + немного JS.
+  -->
+  <div class="gallery" data-gallery data-start={start} data-inview style="--d:2">
+    <div
+      class="gallery__stage"
+      data-stage
+      tabindex="0"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={g.label}
+    >
+      {g.items.map((item, i) => (
+        <figure
+          class="slide"
+          data-slide
+          aria-roledescription="slide"
+          aria-label={`${i + 1} / ${g.items.length}: ${item.caption}`}
+        >
+          <img
+            class="slide__img"
+            src={item.src}
+            alt={item.caption}
+            width="1280"
+            height="853"
+            loading={Math.abs(i - start) <= 1 ? 'eager' : 'lazy'}
+            decoding="async"
+            draggable="false"
+          />
+          <figcaption class="slide__caption">{item.caption}</figcaption>
+        </figure>
+      ))}
+    </div>
+
+    <div class="container gallery__bar">
+      <button class="gallery__btn" type="button" data-prev aria-label={g.prev}><Icon name="arrow-left" size={18} /></button>
+      <p class="gallery__status" aria-live="polite">
+        <span class="gallery__count"><b data-index>{pad(start + 1)}</b> / {pad(g.items.length)}</span>
+        <span class="gallery__caption" data-caption>{g.items[start].caption}</span>
+      </p>
+      <button class="gallery__btn" type="button" data-next aria-label={g.next}><Icon name="arrow-right" size={18} /></button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const gallery = document.querySelector<HTMLElement>('[data-gallery]');
+  if (gallery) {
+    const stage = gallery.querySelector<HTMLElement>('[data-stage]')!;
+    const slides = [...gallery.querySelectorAll<HTMLElement>('[data-slide]')];
+    const indexEl = gallery.querySelector<HTMLElement>('[data-index]')!;
+    const captionEl = gallery.querySelector<HTMLElement>('[data-caption]')!;
+    const captions = slides.map((s) => s.querySelector('figcaption')!.textContent ?? '');
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const last = slides.length - 1;
+
+    let target = +(gallery.dataset.start ?? 0);
+    let pos = target;
+    let raf = 0;
+    let W = 0;
+
+    const measure = () => { W = slides[0].offsetWidth; };
+
+    const render = () => {
+      slides.forEach((slide, i) => {
+        const d = i - pos;
+        const a = Math.abs(d);
+        const s = Math.sign(d);
+        // Ближние раздвигаются широко, дальние «складываются» в пластины
+        const x =
+          a <= 1 ? d * W * 0.6
+          : a <= 2 ? s * (W * 0.6 + (a - 1) * W * 0.38)
+          : s * (W * 0.98 + (a - 2) * W * 0.2);
+        const rot = -s * Math.min(80, a <= 1 ? a * 44 : 44 + (a - 1) * 18);
+        const z = a <= 1 ? -a * 170 : -170 - (a - 1) * 90;
+        slide.style.transform = `translate(-50%, -50%) translateX(${x}px) translateZ(${z}px) rotateY(${rot}deg)`;
+        slide.style.zIndex = String(100 - Math.round(a * 10));
+        slide.style.setProperty('--fog', String(Math.min(1, Math.max(0, (a - 0.6) / 2.4))));
+        slide.style.filter = a > 1 ? `blur(${Math.min(7, (a - 1) * 2.4)}px)` : 'none';
+        slide.style.opacity = String(a > 4 ? Math.max(0, 1 - (a - 4)) : 1);
+        slide.classList.toggle('is-active', a < 0.5);
+      });
+    };
+
+    const loop = () => {
+      pos += (target - pos) * (reduced ? 1 : 0.14);
+      if (Math.abs(target - pos) < 0.001) pos = target;
+      render();
+      raf = pos !== target ? requestAnimationFrame(loop) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+
+    const updateStatus = () => {
+      const i = Math.round(Math.min(last, Math.max(0, target)));
+      indexEl.textContent = String(i + 1).padStart(2, '0');
+      captionEl.textContent = captions[i];
+    };
+    const go = (i: number) => {
+      target = Math.min(last, Math.max(0, i));
+      updateStatus();
+      kick();
+    };
+
+    gallery.querySelector('[data-prev]')!.addEventListener('click', () => go(Math.round(target) - 1));
+    gallery.querySelector('[data-next]')!.addEventListener('click', () => go(Math.round(target) + 1));
+    stage.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(Math.round(target) - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(Math.round(target) + 1); }
+    });
+
+    // Перетаскивание (мышь и палец)
+    let startX = 0;
+    let startTarget = 0;
+    let dragging = false;
+    let moved = false;
+    stage.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startTarget = target;
+      stage.setPointerCapture(e.pointerId);
+      stage.classList.add('is-dragging');
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      let t = startTarget - dx / (W * 0.6);
+      // «резинка» за краями
+      if (t < 0) t = t * 0.3;
+      if (t > last) t = last + (t - last) * 0.3;
+      target = t;
+      pos = t;
+      render();
+    });
+    const end = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      stage.classList.remove('is-dragging');
+      if (!moved) {
+        // клик по боковой карточке — выводим её в центр
+        const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slide]'); // с pointer capture e.target — сама сцена
+        if (hit) { go(slides.indexOf(hit)); return; }
+      }
+      go(Math.round(target));
+    };
+    stage.addEventListener('pointerup', end);
+    stage.addEventListener('pointercancel', end);
+
+    window.addEventListener('resize', () => { measure(); render(); });
+    measure();
+    render();
+  }
+</script>
+
+<style>
+  .about { overflow: hidden; }
+  .about__title { margin-bottom: 24px; }
+  .about__intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 96px);
+    align-items: stretch;
+  }
+  .about__lead { max-width: 36em; align-self: center; }
+
+  /* Две цифры: высота блока = высота текста слева */
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-block: 1px solid var(--line);
+  }
+  .facts__item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 24px;
+  }
+  .facts__item + .facts__item { border-left: 1px solid var(--line); }
+  .facts__value {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-stretch: 88%;
+    font-size: clamp(30px, 2.8vw, 40px);
+    line-height: 1;
+  }
+  .facts__label { margin: 6px 0 0; font-size: 14px; color: var(--text-2); }
+
+  /* ---------- галерея ---------- */
+  .gallery { margin-top: clamp(56px, 7vw, 96px); }
+  .gallery__stage {
+    --w: min(560px, 72vw);
+    position: relative;
+    height: calc(var(--w) / 1.5 + 70px);
+    perspective: 1400px;
+    transform-style: preserve-3d;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    outline: none;
+  }
+  .gallery__stage.is-dragging { cursor: grabbing; }
+  .gallery__stage:focus-visible .slide.is-active { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+  .slide {
+    --fog: 0;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--w);
+    aspect-ratio: 3 / 2;
+    margin: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--bg-elev-2);
+    box-shadow: 0 30px 60px -20px var(--shadow), 0 0 0 1px var(--line);
+    will-change: transform, filter;
+    backface-visibility: hidden;
+  }
+  /* Матовое стекло на дальних карточках */
+  .slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--bg) 55%, transparent);
+    opacity: var(--fog);
+    pointer-events: none;
+  }
+
+  .slide__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+  }
+  .slide__caption {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    background: rgb(0 0 0 / 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s, transform 0.4s var(--ease-out);
+  }
+  .slide.is-active .slide__caption { opacity: 1; transform: none; }
+
+  .gallery__bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 8px;
+  }
+  .gallery__btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    transition: color 0.25s, border-color 0.25s, background-color 0.25s;
+  }
+  .gallery__btn:hover { color: var(--text); border-color: var(--line-hover); background: var(--tint); }
+  .gallery__status { display: grid; justify-items: center; gap: 2px; min-width: 220px; text-align: center; }
+  .gallery__count { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .gallery__count b { color: var(--text); font-weight: 600; }
+  .gallery__caption { font-size: 15px; font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .about__intro { grid-template-columns: 1fr; gap: 24px; }
+  }
+  @media (max-width: 560px) {
+    .gallery__stage { --w: 78vw; }
+    .gallery__status { min-width: 0; flex: 1; }
+  }
+</style>
