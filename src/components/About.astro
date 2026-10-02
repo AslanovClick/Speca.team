@@ -11,17 +11,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
   <div class="container">
     <h2 class="h2 about__title" data-inview>{t.title}</h2>
   </div>
-  <!-- Текст и цифры — одной строкой и одной высоты -->
-  <div class="container about__intro">
+  <div class="container">
     <p class="lead about__lead" data-inview style="--d:1">{t.lead}</p>
-    <dl class="facts" data-inview style="--d:2">
-      {t.facts.map((f, i) => (
-        <div class="facts__item">
-          <dt class="facts__value">{f.value}</dt>
-          <dd class="facts__label">{f.label}</dd>
-        </div>
-      ))}
-    </dl>
   </div>
 
   <!--
@@ -187,69 +178,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 <style>
   .about { overflow: hidden; }
   .about__title { margin-bottom: 24px; }
-  .about__intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: clamp(32px, 6vw, 96px);
-    align-items: stretch;
-  }
-  .about__lead { max-width: 36em; align-self: center; }
-
-  /* Две цифры в рамке; по контуру постоянно бежит мягкий блик в цвете ниши */
-  .facts {
-    position: relative;
-    align-self: center;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-  }
-  .facts::before,
-  .facts::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    padding: 1px;
-    border-radius: inherit;
-    background: conic-gradient(
-      from var(--facts-angle),
-      transparent 0deg,
-      transparent 250deg,
-      color-mix(in oklab, var(--ink) 35%, transparent) 310deg,
-      var(--ink) 345deg,
-      transparent 360deg
-    );
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    animation: factsRun 7s linear infinite;
-    pointer-events: none;
-  }
-  /* мягкое свечение вокруг блика */
-  .facts::after {
-    padding: 2px;
-    filter: blur(6px);
-    opacity: 0.55;
-  }
-  @keyframes factsRun { to { --facts-angle: 360deg; } }
-
-  .facts__item {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 22px 28px;
-  }
-  .facts__item + .facts__item { border-left: 1px solid var(--line); }
-  .facts__value {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-stretch: 88%;
-    font-size: clamp(40px, 3.8vw, 56px);
-    line-height: 1;
-  }
-  .facts__label { margin: 8px 0 0; font-size: 15px; color: var(--text-2); }
+  .about__lead { max-width: 40em; }
 
   /* ---------- галерея ---------- */
   .gallery { margin-top: clamp(56px, 7vw, 96px); }
@@ -341,9 +270,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
   .gallery__count b { color: var(--text); font-weight: 600; }
   .gallery__caption { font-size: 15px; font-weight: 500; }
 
-  @media (max-width: 900px) {
-    .about__intro { grid-template-columns: 1fr; gap: 24px; }
-  }
   @media (max-width: 560px) {
     .gallery__stage { --w: 78vw; }
     .gallery__status { min-width: 0; flex: 1; }
